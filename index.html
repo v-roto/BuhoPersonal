@@ -843,42 +843,45 @@
             </div>
 
             <!-- Voice & Audio Settings Card -->
-            <div class="creator-card" style="background: #faf5ff; border-color: #ce82ff;">
-                <h2>🎙️ Configuración de Voz y Pronunciación</h2>
-                <p style="font-size: 0.9rem; color: var(--duo-text-muted); margin-bottom: 12px;">
-                    Elige la voz para la pronunciación. Si la voz IA de Gemini agota sus tokens o falla la conexión, cambiará automáticamente a la voz nativa del navegador.
-                </p>
-                <div class="form-grid-2">
-                    <div class="form-group">
-                        <label>Motor Principal de Voz</label>
-                        <select id="voice-engine-select" class="duo-input" onchange="updateVoiceSettings()">
-                            <option value="gemini">✨ Gemini IA (Ultra-Realista)</option>
-                            <option value="browser">🌐 Navegador Nativo (Sin conexión)</option>
-                        </select>
-                    </div>
-                    <div class="form-group" id="group-gemini-voice">
-                        <label>Voz IA de Gemini</label>
-                        <select id="gemini-voice-select" class="duo-input" onchange="updateVoiceSettings()">
-                            <option value="Kore" selected>Kore (Firm / Clara)</option>
-                            <option value="Zephyr">Zephyr (Bright / Alegre)</option>
-                            <option value="Aoede">Aoede (Breezy / Fresca)</option>
-                            <option value="Callirrhoe">Callirrhoe (Easy-going / Relajada)</option>
-                            <option value="Puck">Puck (Upbeat / Animada)</option>
-                            <option value="Charon">Charon (Informative / Seria)</option>
-                            <option value="Fenrir">Fenrir (Excitable / Dinámica)</option>
-                        </select>
-                    </div>
-                    <div class="form-group" id="group-browser-voice">
-                        <label>Voz Nativa del Navegador (Francés)</label>
-                        <select id="browser-voice-select" class="duo-input" onchange="updateVoiceSettings()">
-                            <option value="">Cargando voces del sistema...</option>
-                        </select>
-                    </div>
-                </div>
-                <div style="margin-top: 10px;">
-                    <button class="action-btn" style="background: var(--duo-purple); border-color: var(--duo-purple-dark);" onclick="testSelectedVoice()">🔊 Probar Voz Seleccionada</button>
-                </div>
-            </div>
+           <div class="creator-card" style="background: #faf5ff; border-color: #ce82ff;">
+    <h2>🎙️ Configuración de Voz y Sonidos de la App</h2>
+    <p style="font-size: 0.9rem; color: var(--duo-text-muted); margin-bottom: 12px;">
+        Selecciona la voz nativa de tu dispositivo y sube tus propios efectos de sonido (archivos .mp3 o .wav).
+    </p>
+
+    <!-- Selector de Voz Nativa -->
+    <div class="form-group">
+        <label>Voz del Navegador (Francés)</label>
+        <select id="browser-voice-select" class="duo-input" onchange="updateVoiceSettings()">
+            <option value="">Cargando voces del sistema...</option>
+        </select>
+    </div>
+    <div style="margin-bottom: 15px;">
+        <button class="action-btn" style="background: var(--duo-purple); border-color: var(--duo-purple-dark);" onclick="testSelectedVoice()">🔊 Probar Voz Seleccionada</button>
+    </div>
+
+    <hr style="margin: 15px 0; border: 0; border-top: 1px solid var(--duo-gray-border);">
+
+    <!-- Cargar Efectos de Sonido (SFX) -->
+    <h3 style="font-size: 1rem; margin-bottom: 10px;">🎵 Sonidos Personalizados de la Interfaz</h3>
+    <div class="form-grid-3">
+        <div class="form-group">
+            <label>Acierto (Correcto)</label>
+            <input type="file" id="sfx-correct-input" accept="audio/*" class="duo-input" onchange="uploadSFX('correct', event)">
+            <button class="skip-btn" style="margin-top:5px; width:100%; font-size:0.8rem;" onclick="playSFX('correct')">▶️ Probar</button>
+        </div>
+        <div class="form-group">
+            <label>Error (Incorrecto)</label>
+            <input type="file" id="sfx-incorrect-input" accept="audio/*" class="duo-input" onchange="uploadSFX('incorrect', event)">
+            <button class="skip-btn" style="margin-top:5px; width:100%; font-size:0.8rem;" onclick="playSFX('incorrect')">▶️ Probar</button>
+        </div>
+        <div class="form-group">
+            <label>Fin de Lección</label>
+            <input type="file" id="sfx-complete-input" accept="audio/*" class="duo-input" onchange="uploadSFX('complete', event)">
+            <button class="skip-btn" style="margin-top:5px; width:100%; font-size:0.8rem;" onclick="playSFX('complete')">▶️ Probar</button>
+        </div>
+    </div>
+</div>
 
             <!-- Backup & Restore Data Card -->
             <div class="creator-card" style="background: #f0f9ff; border-color: var(--duo-blue);">
@@ -1295,36 +1298,36 @@
             } 
             // PHONEME / LETTER PRONUNCIATION
             else if (item.type === 'phoneme_speak') {
-                container.innerHTML = `
-                    ${levelBadgeHTML}
-                    <h2 class="exercise-title">Pronunciación de Letras y Fonemas 🎙️</h2>
-                    <div class="speaking-card">
-                        <div class="phoneme-display">${item.data.symbol}</div>
-                        <p style="font-weight: 700; color: var(--duo-text-muted);">Escucha el sonido del fonema y luego pronúncialo:</p>
-                        <button class="speaker-btn" onclick="speakFrench('${item.data.symbol}')">🔊 Sonido del fonema</button>
-
-                        <div class="phoneme-example-box">
-                            <div>
-                                <span style="font-size: 0.85rem; color: var(--duo-text-muted);">Ejemplo:</span>
-                                <div><strong style="font-size: 1.1rem; color: var(--duo-purple-dark);">${item.data.word}</strong> (${item.data.trans}) ${item.data.img || ''}</div>
-                            </div>
-                            <button class="speaker-btn" style="width: 36px; height: 36px; font-size: 1rem;" onclick="speakFrench('${item.data.word}')">🔊</button>
-                        </div>
-                        
-                        <div style="margin-top: 10px;">
-                            <button class="mic-btn" id="mic-trigger-btn" onclick="toggleSpeechRecognition()">🎤</button>
-                        </div>
-                        <p id="speech-status" style="font-size: 0.85rem; color: var(--duo-text-muted);">Toca el micrófono y pronuncia "${item.data.symbol}" o "${item.data.word}"</p>
-
-                        <!-- Editable Speech Transcript -->
-                        <div class="speech-edit-container">
-                            <label class="speech-edit-label">Lo que escuchó el sistema (puedes editarlo):</label>
-                            <input type="text" id="user-speech-input" class="duo-input" placeholder="Haz clic en el mic o escribe aquí..." style="border-color: #ce93d8;">
-                        </div>
-
-                        <button class="skip-btn" onclick="skipSpeakingExercise()">⏭️ Saltar este ejercicio</button>
+    container.innerHTML = `
+        ${levelBadgeHTML}
+        <h2 class="exercise-title">Pronunciación de Letras y Fonemas 🎙️</h2>
+        <div class="speaking-card">
+            <!-- Fonema y Palabra de Ejemplo alineados lado a lado -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; width: 100%;">
+                <div class="phoneme-display" style="margin: 0; min-width: 110px;">${item.data.symbol}</div>
+                <div style="text-align: left;">
+                    <div style="font-size: 0.85rem; color: var(--duo-text-muted);">Ejemplo:</div>
+                    <div style="font-size: 1.4rem; font-weight: 800; color: var(--duo-purple-dark);">
+                        ${item.data.word} <span style="font-size: 1rem; font-weight: 600; color: var(--duo-text-muted);">(${item.data.trans})</span> ${item.data.img || ''}
                     </div>
-                `;
+                </div>
+                <button class="speaker-btn" style="width: 44px; height: 44px; font-size: 1.2rem; flex-shrink:0;" onclick="speakFrench('${item.data.word.replace(/'/g, "\\'")}')">🔊</button>
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <button class="mic-btn" id="mic-trigger-btn" onclick="toggleSpeechRecognition()">🎤</button>
+            </div>
+            <p id="speech-status" style="font-size: 0.85rem; color: var(--duo-text-muted);">Toca el micrófono y pronuncia "${item.data.symbol}" o "${item.data.word}"</p>
+
+            <!-- Transcripción editable -->
+            <div class="speech-edit-container">
+                <label class="speech-edit-label">Lo que escuchó el sistema (puedes editarlo):</label>
+                <input type="text" id="user-speech-input" class="duo-input" placeholder="Haz clic en el mic o escribe aquí..." style="border-color: #ce93d8;">
+            </div>
+
+            <button class="skip-btn" onclick="skipSpeakingExercise()">⏭️ Saltar este ejercicio</button>
+        </div>
+    `;
             }
             // VOCAB / SENTENCE SPEAKING EXERCISE
             else if (item.type === 'speaking') {
@@ -1421,10 +1424,12 @@
 
             // AUTO FOCUS INPUT FIELD IMMEDIATELY
             setTimeout(() => {
-                const firstInput = document.querySelector('#view-practice input[type="text"]:not([disabled])');
-                if (firstInput) {
-                    firstInput.focus();
-                    firstInput.select();
+                if (!currentItem.isSpeaking) {
+                    const firstInput = document.querySelector('#view-practice input[type="text"]:not([disabled])');
+                    if (firstInput) {
+                        firstInput.focus();
+                        firstInput.select();
+                    }
                 }
             }, 60);
         }

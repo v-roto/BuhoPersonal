@@ -205,6 +205,7 @@
             overflow: hidden;
             background: white;
             border: 2px solid var(--duo-gray-border);
+            margin-bottom: 15px;
         }
 
         .illustration-box img {
@@ -439,34 +440,44 @@
             cursor: pointer;
         }
 
-        /* Phoneme / Letter Pronunciation Special Styles */
-        .phoneme-display {
-            font-size: 3.5rem;
-            font-weight: 900;
-            color: var(--duo-purple-dark);
+        /* Combined Phoneme Display */
+        .phoneme-combined-card {
             background: white;
             border: 3px solid #e1c0ff;
             border-radius: 20px;
-            width: 130px;
-            height: 100px;
+            padding: 20px;
+            width: 100%;
+            max-width: 480px;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            margin: 0 auto;
+            gap: 14px;
             box-shadow: 0 4px 0 #e1c0ff;
         }
 
-        .phoneme-example-box {
-            background: white;
-            border: 2px solid var(--duo-gray-border);
-            border-radius: 14px;
-            padding: 12px 18px;
+        .phoneme-header-row {
             display: flex;
             align-items: center;
-            gap: 12px;
-            width: 100%;
-            max-width: 400px;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .phoneme-symbol-text {
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--duo-purple-dark);
+            line-height: 1;
+        }
+
+        .phoneme-example-row {
+            display: flex;
+            align-items: center;
             justify-content: space-between;
+            background: #faf5ff;
+            border: 1px solid #e1c0ff;
+            border-radius: 12px;
+            padding: 10px 16px;
+            width: 100%;
         }
 
         /* Creator Forms */
@@ -630,7 +641,7 @@
             border-color: var(--duo-red-dark);
         }
 
-        /* Toast Messages (Replacing alert) */
+        /* Toast Messages */
         .toast-container {
             position: fixed;
             top: 20px;
@@ -711,11 +722,11 @@
                 <div class="form-grid-2" style="margin-top: 10px;">
                     <div class="form-group">
                         <label>Palabra en Francés</label>
-                        <input type="text" id="add-vocab-fr" class="duo-input" placeholder="e.g. Pomme">
+                        <input type="text" id="add-vocab-fr" class="duo-input" placeholder="e.g. Pomme" autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label>Traducción al Español</label>
-                        <input type="text" id="add-vocab-es" class="duo-input" placeholder="e.g. Manzana">
+                        <input type="text" id="add-vocab-es" class="duo-input" placeholder="e.g. Manzana" autocomplete="off">
                     </div>
                 </div>
 
@@ -729,7 +740,7 @@
 
                     <div id="vocab-input-emoji"><input type="text" id="add-vocab-emoji" class="duo-input" placeholder="e.g. 🍎"></div>
                     <div id="vocab-input-file" style="display:none;"><input type="file" id="add-vocab-file" accept="image/*" class="duo-input"></div>
-                    <div id="vocab-input-svg" style="display:none;"><textarea id="add-vocab-svg" class="duo-input" style="height:70px;" placeholder='e.g. <svg viewBox="0 0 100 100">...</svg>'></textarea></div>
+                    <div id="vocab-input-svg" style="display:none;"><textarea id="add-vocab-svg" class="duo-input" style="height:70px;" placeholder='Código SVG...'></textarea></div>
                 </div>
 
                 <button class="action-btn" onclick="addVocabItem()">+ Guardar Vocabulario</button>
@@ -742,21 +753,31 @@
                 <div class="form-grid-3" style="margin-top: 10px;">
                     <div class="form-group">
                         <label>Letra / Fonema</label>
-                        <input type="text" id="add-phoneme-symbol" class="duo-input" placeholder="e.g. ou">
+                        <input type="text" id="add-phoneme-symbol" class="duo-input" placeholder="e.g. ou" autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label>Palabra Ejemplo (FR)</label>
-                        <input type="text" id="add-phoneme-word" class="duo-input" placeholder="e.g. chou">
+                        <input type="text" id="add-phoneme-word" class="duo-input" placeholder="e.g. chou" autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label>Traducción Ejemplo (ES)</label>
-                        <input type="text" id="add-phoneme-trans" class="duo-input" placeholder="e.g. col">
+                        <input type="text" id="add-phoneme-trans" class="duo-input" placeholder="e.g. col" autocomplete="off">
                     </div>
                 </div>
+                
                 <div class="form-group">
-                    <label>Emoji del Ejemplo</label>
-                    <input type="text" id="add-phoneme-img" class="duo-input" placeholder="e.g. 🥬">
+                    <label>Ilustración del Ejemplo (Opcional)</label>
+                    <div class="radio-group">
+                        <label class="radio-label"><input type="radio" name="phoneme-img-type" value="emoji" checked onclick="toggleImgTypeInputs('phoneme', 'emoji')"> Emoji</label>
+                        <label class="radio-label"><input type="radio" name="phoneme-img-type" value="file" onclick="toggleImgTypeInputs('phoneme', 'file')"> Subir Imagen</label>
+                        <label class="radio-label"><input type="radio" name="phoneme-img-type" value="svg" onclick="toggleImgTypeInputs('phoneme', 'svg')"> Código SVG</label>
+                    </div>
+
+                    <div id="phoneme-input-emoji"><input type="text" id="add-phoneme-emoji" class="duo-input" placeholder="e.g. 🥬"></div>
+                    <div id="phoneme-input-file" style="display:none;"><input type="file" id="add-phoneme-file" accept="image/*" class="duo-input"></div>
+                    <div id="phoneme-input-svg" style="display:none;"><textarea id="add-phoneme-svg" class="duo-input" style="height:70px;" placeholder='Código SVG...'></textarea></div>
                 </div>
+                
                 <button class="action-btn" onclick="addPhonemeItem()">+ Guardar Fonema</button>
                 <div class="item-list" id="list-phonemes"></div>
             </div>
@@ -767,20 +788,20 @@
                 <div class="form-grid-2" style="margin-top: 10px;">
                     <div class="form-group">
                         <label>Verbo</label>
-                        <input type="text" id="add-gram-verb" class="duo-input" placeholder="e.g. Parler">
+                        <input type="text" id="add-gram-verb" class="duo-input" placeholder="e.g. Parler" autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label>Tiempo Gramatical</label>
-                        <input type="text" id="add-gram-tense" class="duo-input" placeholder="e.g. Présent">
+                        <input type="text" id="add-gram-tense" class="duo-input" placeholder="e.g. Présent" autocomplete="off">
                     </div>
                 </div>
                 <div class="form-grid-3">
-                    <div class="form-group"><label>Je / J'</label><input type="text" id="add-gram-je" class="duo-input" placeholder="parle"></div>
-                    <div class="form-group"><label>Tu</label><input type="text" id="add-gram-tu" class="duo-input" placeholder="parles"></div>
-                    <div class="form-group"><label>Il / Elle / On</label><input type="text" id="add-gram-il" class="duo-input" placeholder="parle"></div>
-                    <div class="form-group"><label>Nous</label><input type="text" id="add-gram-nous" class="duo-input" placeholder="parlons"></div>
-                    <div class="form-group"><label>Vous</label><input type="text" id="add-gram-vous" class="duo-input" placeholder="parlez"></div>
-                    <div class="form-group"><label>Ils / Elles</label><input type="text" id="add-gram-ils" class="duo-input" placeholder="parlent"></div>
+                    <div class="form-group"><label>Je / J'</label><input type="text" id="add-gram-je" class="duo-input" placeholder="parle" autocomplete="off"></div>
+                    <div class="form-group"><label>Tu</label><input type="text" id="add-gram-tu" class="duo-input" placeholder="parles" autocomplete="off"></div>
+                    <div class="form-group"><label>Il / Elle / On</label><input type="text" id="add-gram-il" class="duo-input" placeholder="parle" autocomplete="off"></div>
+                    <div class="form-group"><label>Nous</label><input type="text" id="add-gram-nous" class="duo-input" placeholder="parlons" autocomplete="off"></div>
+                    <div class="form-group"><label>Vous</label><input type="text" id="add-gram-vous" class="duo-input" placeholder="parlez" autocomplete="off"></div>
+                    <div class="form-group"><label>Ils / Elles</label><input type="text" id="add-gram-ils" class="duo-input" placeholder="parlent" autocomplete="off"></div>
                 </div>
                 <button class="action-btn" onclick="addGrammarItem()">+ Guardar Tabla Gramatical</button>
                 <div class="item-list" id="list-grammar"></div>
@@ -791,16 +812,16 @@
                 <h2>4. Completar Oración</h2>
                 <div class="form-group" style="margin-top: 10px;">
                     <label>Título / Instrucción</label>
-                    <input type="text" id="add-fill-title" class="duo-input" placeholder="e.g. Completa la frase">
+                    <input type="text" id="add-fill-title" class="duo-input" placeholder="e.g. Completa la frase" autocomplete="off">
                 </div>
                 <div class="form-grid-2">
                     <div class="form-group">
                         <label>Oración en Francés (usa '___')</label>
-                        <input type="text" id="add-fill-sentence" class="duo-input" placeholder="e.g. Je ___ une pomme">
+                        <input type="text" id="add-fill-sentence" class="duo-input" placeholder="e.g. Je ___ une pomme" autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label>Palabra Correcta</label>
-                        <input type="text" id="add-fill-answer" class="duo-input" placeholder="e.g. mange">
+                        <input type="text" id="add-fill-answer" class="duo-input" placeholder="e.g. mange" autocomplete="off">
                     </div>
                 </div>
 
@@ -827,67 +848,82 @@
                 <div class="form-grid-2" style="margin-top: 10px;">
                     <div class="form-group">
                         <label>Traducción / Título</label>
-                        <input type="text" id="add-order-title" class="duo-input" placeholder="e.g. El gato negro duerme">
+                        <input type="text" id="add-order-title" class="duo-input" placeholder="e.g. El gato negro duerme" autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label>Oración Correcta Completa</label>
-                        <input type="text" id="add-order-sentence" class="duo-input" placeholder="e.g. Le chat noir dort">
+                        <input type="text" id="add-order-sentence" class="duo-input" placeholder="e.g. Le chat noir dort" autocomplete="off">
                     </div>
                 </div>
                 <div class="form-group">
                     <label>Palabras Extra de Distracción (separadas por coma)</label>
-                    <input type="text" id="add-order-extras" class="duo-input" placeholder="e.g. rouge, chien, mange">
+                    <input type="text" id="add-order-extras" class="duo-input" placeholder="e.g. rouge, chien, mange" autocomplete="off">
                 </div>
+                
+                <div class="form-group">
+                    <label>Ilustración (Opcional)</label>
+                    <div class="radio-group">
+                        <label class="radio-label"><input type="radio" name="order-img-type" value="emoji" checked onclick="toggleImgTypeInputs('order', 'emoji')"> Emoji</label>
+                        <label class="radio-label"><input type="radio" name="order-img-type" value="file" onclick="toggleImgTypeInputs('order', 'file')"> Subir Imagen</label>
+                        <label class="radio-label"><input type="radio" name="order-img-type" value="svg" onclick="toggleImgTypeInputs('order', 'svg')"> Código SVG</label>
+                    </div>
+
+                    <div id="order-input-emoji"><input type="text" id="add-order-emoji" class="duo-input" placeholder="e.g. 🐈"></div>
+                    <div id="order-input-file" style="display:none;"><input type="file" id="add-order-file" accept="image/*" class="duo-input"></div>
+                    <div id="order-input-svg" style="display:none;"><textarea id="add-order-svg" class="duo-input" style="height:70px;" placeholder='Código SVG...'></textarea></div>
+                </div>
+                
                 <button class="action-btn" onclick="addOrderItem()">+ Guardar Reordenar</button>
                 <div class="item-list" id="list-order"></div>
             </div>
 
-            <!-- Voice & Audio Settings Card -->
-           <div class="creator-card" style="background: #faf5ff; border-color: #ce82ff;">
-    <h2>🎙️ Configuración de Voz y Sonidos de la App</h2>
-    <p style="font-size: 0.9rem; color: var(--duo-text-muted); margin-bottom: 12px;">
-        Selecciona la voz nativa de tu dispositivo y sube tus propios efectos de sonido (archivos .mp3 o .wav).
-    </p>
+            <!-- Custom Sounds Card -->
+            <div class="creator-card" style="background: #fffde7; border-color: #ffd54f;">
+                <h2>🔔 Sonidos Personalizados de Respuesta y Fin de Sesión</h2>
+                <p style="font-size: 0.9rem; color: var(--duo-text-muted); margin-bottom: 12px;">
+                    Sube tus propios archivos de audio cortos. Si no se especifican, se utilizarán tonos sintéticos generados por el navegador.
+                </p>
+                <div class="form-grid-3">
+                    <div class="form-group">
+                        <label>Respuesta Correcta</label>
+                        <input type="file" id="sound-correct-file" accept="audio/*" class="duo-input" onchange="handleSoundUpload(event, 'correct')">
+                        <button class="action-btn" style="background: var(--duo-green); border-color: var(--duo-green-dark); margin-top:6px;" onclick="playSound('correct')">▶ Probar</button>
+                    </div>
+                    <div class="form-group">
+                        <label>Respuesta Incorrecta</label>
+                        <input type="file" id="sound-incorrect-file" accept="audio/*" class="duo-input" onchange="handleSoundUpload(event, 'incorrect')">
+                        <button class="action-btn" style="background: var(--duo-red); border-color: var(--duo-red-dark); margin-top:6px;" onclick="playSound('incorrect')">▶ Probar</button>
+                    </div>
+                    <div class="form-group">
+                        <label>Sesión Finalizada</label>
+                        <input type="file" id="sound-finish-file" accept="audio/*" class="duo-input" onchange="handleSoundUpload(event, 'finish')">
+                        <button class="action-btn" style="background: var(--duo-yellow); border-color: #d4a000; color: #5c4300; margin-top:6px;" onclick="playSound('finish')">▶ Probar</button>
+                    </div>
+                </div>
+            </div>
 
-    <!-- Selector de Voz Nativa -->
-    <div class="form-group">
-        <label>Voz del Navegador (Francés)</label>
-        <select id="browser-voice-select" class="duo-input" onchange="updateVoiceSettings()">
-            <option value="">Cargando voces del sistema...</option>
-        </select>
-    </div>
-    <div style="margin-bottom: 15px;">
-        <button class="action-btn" style="background: var(--duo-purple); border-color: var(--duo-purple-dark);" onclick="testSelectedVoice()">🔊 Probar Voz Seleccionada</button>
-    </div>
-
-    <hr style="margin: 15px 0; border: 0; border-top: 1px solid var(--duo-gray-border);">
-
-    <!-- Cargar Efectos de Sonido (SFX) -->
-    <h3 style="font-size: 1rem; margin-bottom: 10px;">🎵 Sonidos Personalizados de la Interfaz</h3>
-    <div class="form-grid-3">
-        <div class="form-group">
-            <label>Acierto (Correcto)</label>
-            <input type="file" id="sfx-correct-input" accept="audio/*" class="duo-input" onchange="uploadSFX('correct', event)">
-            <button class="skip-btn" style="margin-top:5px; width:100%; font-size:0.8rem;" onclick="playSFX('correct')">▶️ Probar</button>
-        </div>
-        <div class="form-group">
-            <label>Error (Incorrecto)</label>
-            <input type="file" id="sfx-incorrect-input" accept="audio/*" class="duo-input" onchange="uploadSFX('incorrect', event)">
-            <button class="skip-btn" style="margin-top:5px; width:100%; font-size:0.8rem;" onclick="playSFX('incorrect')">▶️ Probar</button>
-        </div>
-        <div class="form-group">
-            <label>Fin de Lección</label>
-            <input type="file" id="sfx-complete-input" accept="audio/*" class="duo-input" onchange="uploadSFX('complete', event)">
-            <button class="skip-btn" style="margin-top:5px; width:100%; font-size:0.8rem;" onclick="playSFX('complete')">▶️ Probar</button>
-        </div>
-    </div>
-</div>
+            <!-- Voice Settings Card -->
+            <div class="creator-card" style="background: #faf5ff; border-color: #ce82ff;">
+                <h2>🎙️ Configuración de Voz Nativa del Dispositivo</h2>
+                <p style="font-size: 0.9rem; color: var(--duo-text-muted); margin-bottom: 12px;">
+                    Selecciona la voz nativa instalada en tu navegador o sistema operativo para la pronunciación.
+                </p>
+                <div class="form-group" id="group-browser-voice">
+                    <label>Voz Nativa del Navegador (Francés)</label>
+                    <select id="browser-voice-select" class="duo-input" onchange="updateVoiceSettings()">
+                        <option value="">Cargando voces del sistema...</option>
+                    </select>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button class="action-btn" style="background: var(--duo-purple); border-color: var(--duo-purple-dark);" onclick="testSelectedVoice()">🔊 Probar Voz Seleccionada</button>
+                </div>
+            </div>
 
             <!-- Backup & Restore Data Card -->
             <div class="creator-card" style="background: #f0f9ff; border-color: var(--duo-blue);">
                 <h2>💾 Copia de Seguridad y Datos (Estrellas)</h2>
                 <p style="font-size: 0.9rem; color: var(--duo-text-muted); margin-bottom: 12px;">
-                    Exporta tus ejercicios y estrellas acumuladas a un archivo para llevar tus progresos a Firefox, Chrome u otra computadora.
+                    Exporta tus ejercicios y estrellas acumuladas a un archivo para llevar tus progresos a otros navegadores o dispositivos.
                 </p>
                 <div class="form-grid-2">
                     <button class="action-btn" style="background: var(--duo-blue); border-color: var(--duo-blue-dark);" onclick="exportDataJSON()">📥 Exportar Respaldo (.json)</button>
@@ -913,7 +949,7 @@
     </div>
 
     <script>
-        // Custom Toast Notification System
+        // --- 1. Utilidades y Sistema de Notificaciones ---
         function showToast(msg) {
             const area = document.getElementById('toast-area');
             const toast = document.createElement('div');
@@ -927,7 +963,90 @@
             }, 3000);
         }
 
-        // Default French Knowledge Base with Phonemes
+        // --- 2. Sistema de Sonidos ---
+        let globalAudioCtx = null; 
+
+        function handleSoundUpload(event, type) {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.size > 1500000) {
+                    showToast("❌ Error: El audio es muy pesado. Usa un archivo más pequeño (<1.5MB).");
+                    event.target.value = "";
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        localStorage.setItem(`duo_french_sound_${type}`, e.target.result);
+                        showToast(`Sonido personalizado guardado.`);
+                    } catch (err) {
+                        showToast("❌ Error: El almacenamiento del navegador está lleno. Borra el caché o usa audios más cortos.");
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function playSound(type) {
+            const customSound = localStorage.getItem(`duo_french_sound_${type}`);
+            if (customSound) {
+                const audio = new Audio(customSound);
+                audio.play().catch(() => playFallbackSynthSound(type));
+            } else {
+                playFallbackSynthSound(type);
+            }
+        }
+
+        function playFallbackSynthSound(type) {
+            try {
+                if (!globalAudioCtx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioContext) return;
+                    globalAudioCtx = new AudioContext();
+                }
+                if (globalAudioCtx.state === 'suspended') {
+                    globalAudioCtx.resume();
+                }
+
+                const osc = globalAudioCtx.createOscillator();
+                const gain = globalAudioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(globalAudioCtx.destination);
+                const now = globalAudioCtx.currentTime;
+
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.15);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'incorrect') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.linearRampToValueAtTime(130, now + 0.25);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'finish') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(554.37, now + 0.1);
+                    osc.frequency.setValueAtTime(659.25, now + 0.2);
+                    osc.frequency.setValueAtTime(880, now + 0.3);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                }
+            } catch (e) {
+                console.warn("Audio Context Error:", e);
+            }
+        }
+
+        // --- 3. Base de Datos ---
         const defaultKnowledge = {
             vocab: [
                 { id: "v1", fr: "Pomme", es: "Manzana", img: "🍎", score: 0 },
@@ -963,9 +1082,13 @@
             ]
         };
 
-        // Persistent DB & Sessions
-        let db = JSON.parse(localStorage.getItem('duo_french_db_v3')) || defaultKnowledge;
-        if (!db.phonemes) db.phonemes = defaultKnowledge.phonemes;
+        let db = JSON.parse(localStorage.getItem('duo_french_db_v3')) || {};
+        if (!db.vocab) db.vocab = [...defaultKnowledge.vocab];
+        if (!db.phonemes) db.phonemes = [...defaultKnowledge.phonemes];
+        if (!db.grammar) db.grammar = [...defaultKnowledge.grammar];
+        if (!db.fill) db.fill = [...defaultKnowledge.fill];
+        if (!db.order) db.order = [...defaultKnowledge.order];
+
         let sessionCount = parseInt(localStorage.getItem('duo_french_sessions_v3')) || 0;
 
         function saveDB() {
@@ -981,9 +1104,8 @@
             document.getElementById('stat-decay').textContent = `${remainingForDecay}/10`;
         }
 
-        // Active Session Queues
-        let sessionQueue = [];      // Active queue for session
-        let retryQueue = [];        // Incorrect items queue
+        let sessionQueue = [];
+        let retryQueue = [];
         let currentItem = null;
         let isRetryMode = false;
         let isChecked = false;
@@ -991,27 +1113,38 @@
         let speechRecognitionInstance = null;
         let browserVoices = [];
 
-        // Populate Browser Native French Voices into Dropdown
+        // --- 4. Sistema de Voz Nativa ---
         function populateBrowserVoices() {
             if ('speechSynthesis' in window) {
-                browserVoices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('fr') || v.lang.startsWith('FR'));
+                let allVoices = window.speechSynthesis.getVoices();
+                browserVoices = allVoices.filter(v => v.lang.toLowerCase().includes('fr'));
+                
+                if (browserVoices.length === 0) {
+                    browserVoices = allVoices; 
+                }
+
                 const select = document.getElementById('browser-voice-select');
                 if (!select) return;
                 select.innerHTML = '';
+                
                 if (browserVoices.length === 0) {
-                    select.innerHTML = '<option value="">Voz predeterminada del sistema</option>';
+                    select.innerHTML = '<option value="">No se encontraron voces instaladas</option>';
                 } else {
                     browserVoices.forEach(voice => {
-                        const isNatural = voice.name.toLowerCase().includes('natural') || voice.name.toLowerCase().includes('online') || voice.name.toLowerCase().includes('google');
-                        const label = `${voice.name} (${voice.lang})${isNatural ? ' ⭐ Natural' : ''}`;
                         const opt = document.createElement('option');
                         opt.value = voice.name;
-                        opt.textContent = label;
+                        opt.textContent = `${voice.name} (${voice.lang})`;
                         select.appendChild(opt);
                     });
                 }
+
                 const savedVoice = localStorage.getItem('duo_french_browser_voice');
-                if (savedVoice) select.value = savedVoice;
+                if (savedVoice && browserVoices.some(v => v.name === savedVoice)) {
+                    select.value = savedVoice;
+                } else if (browserVoices.length > 0) {
+                    select.value = browserVoices[0].name;
+                    updateVoiceSettings(); 
+                }
             }
         }
 
@@ -1020,147 +1153,33 @@
             populateBrowserVoices();
         }
 
-        // Convert PCM 16-bit Array to WAV Blob Container
-        function pcm16ToWavBlob(pcm16Array, sampleRate = 24000) {
-            const numChannels = 1;
-            const bytesPerSample = 2;
-            const blockAlign = numChannels * bytesPerSample;
-            const byteRate = sampleRate * blockAlign;
-            const dataSize = pcm16Array.length * bytesPerSample;
-            const buffer = new ArrayBuffer(44 + dataSize);
-            const view = new DataView(buffer);
-
-            function writeString(offset, string) {
-                for (let i = 0; i < string.length; i++) {
-                    view.setUint8(offset + i, string.charCodeAt(i));
-                }
-            }
-
-            writeString(0, 'RIFF');
-            view.setUint32(4, 36 + dataSize, true);
-            writeString(8, 'WAVE');
-            writeString(12, 'fmt ');
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true);
-            view.setUint16(22, numChannels, true);
-            view.setUint32(24, sampleRate, true);
-            view.setUint32(28, byteRate, true);
-            view.setUint16(32, blockAlign, true);
-            view.setUint16(34, 16, true);
-            writeString(36, 'data');
-            view.setUint32(40, dataSize, true);
-
-            let offset = 44;
-            for (let i = 0; i < pcm16Array.length; i++, offset += 2) {
-                view.setInt16(offset, pcm16Array[i], true);
-            }
-
-            return new Blob([buffer], { type: 'audio/wav' });
-        }
-
-        // Dual Engine Text-to-Speech with Automatic Fallback
-        async function speakFrench(text) {
-            const engine = localStorage.getItem('duo_french_voice_engine') || 'gemini';
-            const geminiVoice = localStorage.getItem('duo_french_gemini_voice') || 'Kore';
-
-            if (engine === 'gemini') {
-                try {
-                    const apiKey = "";
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
-                    const payload = {
-                        contents: [{
-                            parts: [{ text: `Say in French with natural pronunciation: "${text}"` }]
-                        }],
-                        generationConfig: {
-                            responseModalities: ["AUDIO"],
-                            speechConfig: {
-                                voiceConfig: {
-                                    prebuiltVoiceConfig: { voiceName: geminiVoice }
-                                }
-                            }
-                        }
-                    };
-
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const result = await response.json();
-                    const part = result?.candidates?.[0]?.content?.parts?.[0];
-                    const base64Audio = part?.inlineData?.data;
-                    const mimeType = part?.inlineData?.mimeType || "";
-
-                    if (base64Audio) {
-                        let sampleRate = 24000;
-                        const match = mimeType.match(/rate=(\d+)/);
-                        if (match) sampleRate = parseInt(match[1], 10);
-
-                        const binaryString = atob(base64Audio);
-                        const len = binaryString.length;
-                        const bytes = new Uint8Array(len);
-                        for (let i = 0; i < len; i++) {
-                            bytes[i] = binaryString.charCodeAt(i);
-                        }
-                        const pcm16 = new Int16Array(bytes.buffer);
-                        const wavBlob = pcm16ToWavBlob(pcm16, sampleRate);
-                        const audioUrl = URL.createObjectURL(wavBlob);
-                        const audio = new Audio(audioUrl);
-                        await audio.play();
-                        return;
-                    } else {
-                        throw new Error("No audio returned");
-                    }
-                } catch (err) {
-                    console.warn("Gemini TTS fallback activated:", err);
-                    showToast("ℹ️ Voz IA no disponible. Usando voz nativa del navegador.");
-                    speakFrenchBrowser(text);
-                }
-            } else {
-                speakFrenchBrowser(text);
-            }
-        }
-
-        function speakFrenchBrowser(text) {
+        function speakFrench(text) {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'fr-FR';
+                
+                utterance.lang = 'fr-FR'; 
                 utterance.rate = 0.98;
                 
                 const selectedVoiceName = localStorage.getItem('duo_french_browser_voice');
                 if (selectedVoiceName && browserVoices.length > 0) {
                     const found = browserVoices.find(v => v.name === selectedVoiceName);
-                    if (found) utterance.voice = found;
+                    if (found) {
+                        utterance.voice = found;
+                        utterance.lang = found.lang; 
+                    }
                 }
                 window.speechSynthesis.speak(utterance);
             }
         }
 
         function updateVoiceSettings() {
-            const engine = document.getElementById('voice-engine-select').value;
-            const geminiVoice = document.getElementById('gemini-voice-select').value;
             const browserVoice = document.getElementById('browser-voice-select').value;
-
-            localStorage.setItem('duo_french_voice_engine', engine);
-            localStorage.setItem('duo_french_gemini_voice', geminiVoice);
             localStorage.setItem('duo_french_browser_voice', browserVoice);
-
-            document.getElementById('group-gemini-voice').style.display = engine === 'gemini' ? 'block' : 'none';
             showToast("Configuración de voz guardada.");
         }
 
         function loadVoiceSettingsUI() {
-            const engine = localStorage.getItem('duo_french_voice_engine') || 'gemini';
-            const geminiVoice = localStorage.getItem('duo_french_gemini_voice') || 'Kore';
-            
-            if (document.getElementById('voice-engine-select')) {
-                document.getElementById('voice-engine-select').value = engine;
-                document.getElementById('gemini-voice-select').value = geminiVoice;
-                document.getElementById('group-gemini-voice').style.display = engine === 'gemini' ? 'block' : 'none';
-            }
             populateBrowserVoices();
         }
 
@@ -1168,7 +1187,7 @@
             speakFrench("Bonjour! Bienvenue dans vos leçons de français.");
         }
 
-        // Helper to render Emoji, Uploaded Image DataURL, or SVG
+        // --- 5. Lógica del Modo Práctica ---
         function renderIllustrationHTML(item) {
             if (item.imgDataUrl) {
                 return `<div class="illustration-box"><img src="${item.imgDataUrl}" alt="Illustration"></div>`;
@@ -1178,65 +1197,56 @@
                 return `<div class="vocab-image-placeholder">${item.img || '📘'}</div>`;
             }
         }
+        
+        // Mini render para el ejemplo pequeño de los fonemas
+        function renderMiniIllustrationHTML(item) {
+            if (item.imgDataUrl) return `<img src="${item.imgDataUrl}" style="height: 30px; vertical-align: middle; margin-left: 5px; border-radius: 4px;">`;
+            if (item.svgCode) return `<span style="display:inline-block; width:30px; height:30px; vertical-align:middle; margin-left:5px;">${item.svgCode}</span>`;
+            return `<span style="margin-left:4px; font-size:1.2rem;">${item.img || ''}</span>`;
+        }
 
-        // Build 20-Exercise Session with ALL speaking exercises at the VERY END
         function startNewSession() {
             let pool = [];
 
-            // 1. Non-speaking Written Exercises
-            db.vocab.forEach(item => {
-                pool.push({ category: 'vocab', type: 'vocab_type', isSpeaking: false, data: item, score: item.score || 0 });
-            });
-
-            db.grammar.forEach(item => {
-                pool.push({ category: 'grammar', type: 'grammar', isSpeaking: false, data: item, score: item.score || 0 });
-            });
-
-            db.fill.forEach(item => {
-                pool.push({ category: 'fill', type: 'fill', isSpeaking: false, data: item, score: item.score || 0 });
-            });
-
-            db.order.forEach(item => {
-                pool.push({ category: 'order', type: 'order', isSpeaking: false, data: item, score: item.score || 0 });
-            });
-
-            // 2. Speaking Exercises (MIC REQUIRED AT THE END)
-            db.phonemes.forEach(item => {
-                pool.push({ category: 'phoneme', type: 'phoneme_speak', isSpeaking: true, data: item, score: item.score || 0 });
-            });
-
-            db.vocab.forEach(item => {
-                pool.push({ category: 'vocab', type: 'speaking', isSpeaking: true, targetText: item.fr, promptText: `Pronuncia la palabra`, item: item, score: item.score || 0 });
-            });
-
-            db.fill.forEach(item => {
-                const parts = item.sentence.split('___');
-                const answers = item.answer.split(/[,/]/).map(s => s.trim());
-                let fullSentence = "";
-                parts.forEach((p, idx) => {
-                    fullSentence += p + (answers[idx] || answers[0] || "");
+            if(db.vocab) {
+                db.vocab.forEach(item => {
+                    pool.push({ category: 'vocab', type: 'vocab_type', isSpeaking: false, data: item, score: item.score || 0 });
+                    pool.push({ category: 'vocab', type: 'speaking', isSpeaking: true, targetText: item.fr, promptText: `Pronuncia la palabra`, item: item, score: item.score || 0 });
                 });
-                pool.push({ category: 'fill', type: 'speaking', isSpeaking: true, targetText: fullSentence.trim(), promptText: `Pronuncia la oración completa: "${item.title}"`, item: item, score: item.score || 0 });
-            });
+            }
+            if(db.grammar) {
+                db.grammar.forEach(item => pool.push({ category: 'grammar', type: 'grammar', isSpeaking: false, data: item, score: item.score || 0 }));
+            }
+            if(db.fill) {
+                db.fill.forEach(item => {
+                    pool.push({ category: 'fill', type: 'fill', isSpeaking: false, data: item, score: item.score || 0 });
+                    const parts = item.sentence.split('___');
+                    const answers = item.answer.split(/[,/]/).map(s => s.trim());
+                    let fullSentence = "";
+                    parts.forEach((p, idx) => fullSentence += p + (answers[idx] || answers[0] || ""));
+                    pool.push({ category: 'fill', type: 'speaking', isSpeaking: true, targetText: fullSentence.trim(), promptText: `Pronuncia la oración completa: "${item.title}"`, item: item, score: item.score || 0 });
+                });
+            }
+            if(db.order) {
+                db.order.forEach(item => {
+                    pool.push({ category: 'order', type: 'order', isSpeaking: false, data: item, score: item.score || 0 });
+                    pool.push({ category: 'order', type: 'speaking', isSpeaking: true, targetText: item.sentence, promptText: `Pronuncia la oración: "${item.title}"`, item: item, score: item.score || 0 });
+                });
+            }
+            if(db.phonemes) {
+                db.phonemes.forEach(item => pool.push({ category: 'phoneme', type: 'phoneme_speak', isSpeaking: true, data: item, score: item.score || 0 }));
+            }
 
-            db.order.forEach(item => {
-                pool.push({ category: 'order', type: 'speaking', isSpeaking: true, targetText: item.sentence, promptText: `Pronuncia la oración: "${item.title}"`, item: item, score: item.score || 0 });
-            });
-
-            // Separate non-speaking from speaking
             let nonSpeakingPool = pool.filter(i => !i.isSpeaking);
             let speakingPool = pool.filter(i => i.isSpeaking);
 
-            // Sort both pools by priority (lower scores first + slight jitter)
             const sortByScore = (a, b) => (a.score + Math.random() * 0.8) - (b.score + Math.random() * 0.8);
             nonSpeakingPool.sort(sortByScore);
             speakingPool.sort(sortByScore);
 
-            // Select 15 written + 5 speaking
             let selectedWritten = nonSpeakingPool.slice(0, 15);
             let selectedSpeaking = speakingPool.slice(0, 5);
 
-            // MANDATORY RULE: ALL SPEAKING EXERCISES ARE PUSHED TO THE VERY END!
             sessionQueue = [...selectedWritten, ...selectedSpeaking];
             retryQueue = [];
             isRetryMode = false;
@@ -1254,7 +1264,6 @@
                 finishSession();
                 return;
             }
-
             renderExercise(currentItem);
         }
 
@@ -1262,7 +1271,6 @@
             const container = document.getElementById('exercise-container');
             const drawer = document.getElementById('bottom-drawer');
             
-            // Reset Drawer State & Ensure Visibility
             drawer.className = 'bottom-drawer';
             drawer.style.display = 'flex';
             document.getElementById('feedback-content').style.visibility = 'hidden';
@@ -1272,7 +1280,6 @@
             isChecked = false;
             selectedWords = [];
 
-            // Update Progress Bar
             const totalInSession = 20;
             const remaining = sessionQueue.length + retryQueue.length + 1;
             const progress = Math.min(100, Math.max(5, ((totalInSession - remaining) / totalInSession) * 100));
@@ -1284,7 +1291,6 @@
                     ${item.isSpeaking ? '🎙️ Micrófono • ' : ''}⭐ Dominio: ${item.score}/5 ${isRetryMode ? '• 🔁 Repaso' : ''}
                 </div>`;
 
-            // VOCABULARY: Show ONLY Illustration (NO Spanish text). Hint button plays audio!
             if (item.type === 'vocab_type') {
                 container.innerHTML = `
                     ${levelBadgeHTML}
@@ -1296,40 +1302,42 @@
                     <input type="text" id="user-input" class="duo-input" placeholder="Escribe en francés..." autocomplete="off">
                 `;
             } 
-            // PHONEME / LETTER PRONUNCIATION
             else if (item.type === 'phoneme_speak') {
-    container.innerHTML = `
-        ${levelBadgeHTML}
-        <h2 class="exercise-title">Pronunciación de Letras y Fonemas 🎙️</h2>
-        <div class="speaking-card">
-            <!-- Fonema y Palabra de Ejemplo alineados lado a lado -->
-            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; width: 100%;">
-                <div class="phoneme-display" style="margin: 0; min-width: 110px;">${item.data.symbol}</div>
-                <div style="text-align: left;">
-                    <div style="font-size: 0.85rem; color: var(--duo-text-muted);">Ejemplo:</div>
-                    <div style="font-size: 1.4rem; font-weight: 800; color: var(--duo-purple-dark);">
-                        ${item.data.word} <span style="font-size: 1rem; font-weight: 600; color: var(--duo-text-muted);">(${item.data.trans})</span> ${item.data.img || ''}
+                container.innerHTML = `
+                    ${levelBadgeHTML}
+                    <h2 class="exercise-title">Pronunciación de Letras y Fonemas 🎙️</h2>
+                    <div class="speaking-card">
+                        
+                        <div class="phoneme-combined-card">
+                            <div class="phoneme-header-row">
+                                <span class="phoneme-symbol-text">${item.data.symbol}</span>
+                                <button class="speaker-btn" onclick="speakFrench('${item.data.symbol.replace(/'/g, "\\'")}')">🔊</button>
+                            </div>
+                            <div class="phoneme-example-row">
+                                <div>
+                                    <span style="font-size: 0.8rem; color: var(--duo-text-muted);">Ejemplo: </span>
+                                    <strong style="color: var(--duo-purple-dark); font-size: 1.1rem;">${item.data.word}</strong>
+                                    <span style="color: var(--duo-text-muted); font-size: 0.9rem;"> (${item.data.trans})</span>
+                                    ${renderMiniIllustrationHTML(item.data)}
+                                </div>
+                                <button class="speaker-btn" style="width: 34px; height: 34px; font-size: 0.95rem;" onclick="speakFrench('${item.data.word.replace(/'/g, "\\'")}')">🔊</button>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 5px;">
+                            <button class="mic-btn" id="mic-trigger-btn" onclick="toggleSpeechRecognition()">🎤</button>
+                        </div>
+                        <p id="speech-status" style="font-size: 0.85rem; color: var(--duo-text-muted);">Toca el micrófono y pronuncia "${item.data.symbol}" o "${item.data.word}"</p>
+
+                        <div class="speech-edit-container">
+                            <label class="speech-edit-label">Lo que escuchó el sistema (puedes editarlo):</label>
+                            <input type="text" id="user-speech-input" class="duo-input" placeholder="Haz clic en el mic o escribe aquí..." style="border-color: #ce93d8;" autocomplete="off">
+                        </div>
+
+                        <button class="skip-btn" onclick="skipSpeakingExercise()">⏭️ Saltar este ejercicio</button>
                     </div>
-                </div>
-                <button class="speaker-btn" style="width: 44px; height: 44px; font-size: 1.2rem; flex-shrink:0;" onclick="speakFrench('${item.data.word.replace(/'/g, "\\'")}')">🔊</button>
-            </div>
-            
-            <div style="margin-top: 15px;">
-                <button class="mic-btn" id="mic-trigger-btn" onclick="toggleSpeechRecognition()">🎤</button>
-            </div>
-            <p id="speech-status" style="font-size: 0.85rem; color: var(--duo-text-muted);">Toca el micrófono y pronuncia "${item.data.symbol}" o "${item.data.word}"</p>
-
-            <!-- Transcripción editable -->
-            <div class="speech-edit-container">
-                <label class="speech-edit-label">Lo que escuchó el sistema (puedes editarlo):</label>
-                <input type="text" id="user-speech-input" class="duo-input" placeholder="Haz clic en el mic o escribe aquí..." style="border-color: #ce93d8;">
-            </div>
-
-            <button class="skip-btn" onclick="skipSpeakingExercise()">⏭️ Saltar este ejercicio</button>
-        </div>
-    `;
+                `;
             }
-            // VOCAB / SENTENCE SPEAKING EXERCISE
             else if (item.type === 'speaking') {
                 container.innerHTML = `
                     ${levelBadgeHTML}
@@ -1345,22 +1353,20 @@
                         </div>
                         <p id="speech-status" style="font-size: 0.85rem; color: var(--duo-text-muted);">Toca el micrófono para hablar en francés</p>
 
-                        <!-- Editable Speech Transcript Input -->
                         <div class="speech-edit-container">
                             <label class="speech-edit-label">Lo que escuchó el sistema (puedes editarlo):</label>
-                            <input type="text" id="user-speech-input" class="duo-input" placeholder="Haz clic en el mic o edita la respuesta aquí..." style="border-color: #ce93d8;">
+                            <input type="text" id="user-speech-input" class="duo-input" placeholder="Haz clic en el mic o edita la respuesta aquí..." style="border-color: #ce93d8;" autocomplete="off">
                         </div>
 
                         <button class="skip-btn" onclick="skipSpeakingExercise()">⏭️ Saltar este ejercicio</button>
                     </div>
                 `;
             }
-            // GRAMMAR TABLE
             else if (item.type === 'grammar') {
                 container.innerHTML = `
                     ${levelBadgeHTML}
                     <div class="instruction-box">
-                        <button class="speaker-btn" onclick="speakFrench('${item.data.verb}')">🔊</button>
+                        <button class="speaker-btn" onclick="speakFrench('${item.data.verb.replace(/'/g, "\\'")}')">🔊</button>
                         <div>
                             <h2 style="font-size: 1.25rem;">Completa la tabla de conjugación</h2>
                             <p style="color: var(--duo-text-muted);">Verbo: <strong>${item.data.verb}</strong> | Tiempo: <strong>${item.data.tense}</strong></p>
@@ -1372,17 +1378,16 @@
                             <span class="grammar-badge">${item.data.verb}</span>
                         </div>
                         <table class="conjugation-table">
-                            <tr><td class="pronoun-cell">Je / J'</td><td><input type="text" id="gram-je" class="duo-input" placeholder="..."></td></tr>
-                            <tr><td class="pronoun-cell">Tu</td><td><input type="text" id="gram-tu" class="duo-input" placeholder="..."></td></tr>
-                            <tr><td class="pronoun-cell">Il / Elle / On</td><td><input type="text" id="gram-il" class="duo-input" placeholder="..."></td></tr>
-                            <tr><td class="pronoun-cell">Nous</td><td><input type="text" id="gram-nous" class="duo-input" placeholder="..."></td></tr>
-                            <tr><td class="pronoun-cell">Vous</td><td><input type="text" id="gram-vous" class="duo-input" placeholder="..."></td></tr>
-                            <tr><td class="pronoun-cell">Ils / Elles</td><td><input type="text" id="gram-ils" class="duo-input" placeholder="..."></td></tr>
+                            <tr><td class="pronoun-cell">Je / J'</td><td><input type="text" id="gram-je" class="duo-input" placeholder="..." autocomplete="off"></td></tr>
+                            <tr><td class="pronoun-cell">Tu</td><td><input type="text" id="gram-tu" class="duo-input" placeholder="..." autocomplete="off"></td></tr>
+                            <tr><td class="pronoun-cell">Il / Elle / On</td><td><input type="text" id="gram-il" class="duo-input" placeholder="..." autocomplete="off"></td></tr>
+                            <tr><td class="pronoun-cell">Nous</td><td><input type="text" id="gram-nous" class="duo-input" placeholder="..." autocomplete="off"></td></tr>
+                            <tr><td class="pronoun-cell">Vous</td><td><input type="text" id="gram-vous" class="duo-input" placeholder="..." autocomplete="off"></td></tr>
+                            <tr><td class="pronoun-cell">Ils / Elles</td><td><input type="text" id="gram-ils" class="duo-input" placeholder="..." autocomplete="off"></td></tr>
                         </table>
                     </div>
                 `;
             }
-            // FILL IN BLANK (Supports Multi-blanks)
             else if (item.type === 'fill') {
                 const parts = item.data.sentence.split('___');
                 let sentenceHTML = "";
@@ -1402,7 +1407,6 @@
                     </div>
                 `;
             }
-            // ORDER SENTENCE
             else if (item.type === 'order') {
                 const targetWords = item.data.sentence.split(' ');
                 const allWords = [...targetWords, ...item.data.extras].sort(() => Math.random() - 0.5);
@@ -1413,6 +1417,7 @@
                         <button class="speaker-btn" onclick="speakFrench('${item.data.sentence.replace(/'/g, "\\'")}')">🔊</button>
                         <h2 class="exercise-title" style="margin:0;">${item.data.title}</h2>
                     </div>
+                    ${item.data.img || item.data.imgDataUrl || item.data.svgCode ? renderIllustrationHTML(item.data) : ''}
                     <div class="sentence-target-area" id="target-word-area"></div>
                     <div class="word-bank">
                         ${allWords.map((w, idx) => `
@@ -1421,20 +1426,20 @@
                     </div>
                 `;
             }
-
-            // AUTO FOCUS INPUT FIELD IMMEDIATELY
-            setTimeout(() => {
-                if (!currentItem.isSpeaking) {
+            
+            // AUTOFOCUS CONDICIONAL: Solo para ejercicios que NO sean de hablar 
+            // (y también nos saltamos el de reordenar porque se hace con botones, no tiene input text)
+            if (!item.isSpeaking && item.type !== 'order') {
+                setTimeout(() => {
                     const firstInput = document.querySelector('#view-practice input[type="text"]:not([disabled])');
                     if (firstInput) {
                         firstInput.focus();
-                        firstInput.select();
                     }
-                }
-            }, 60);
+                }, 60);
+            }
         }
 
-        // Global Keyboard Event Listener: Press ENTER to Check/Continue
+        // Global Enter Key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 const practiceView = document.getElementById('view-practice');
@@ -1445,12 +1450,12 @@
             }
         });
 
-        // Web Speech API Voice Recognition
+        // Speech Recognition API
         function toggleSpeechRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             
             if (!SpeechRecognition) {
-                showToast("Tu navegador no soporta Web Speech API. Usa Chrome o Edge.");
+                showToast("Tu navegador no soporta captura de voz nativa.");
                 return;
             }
 
@@ -1488,13 +1493,12 @@
 
             speechRecognitionInstance.onend = function() {
                 micBtn.classList.remove('recording');
-                if (statusText) statusText.textContent = "Grabado. Puedes editar la caja si es necesario y dar a COMPROBAR.";
+                if (statusText) statusText.textContent = "Grabado. Puedes editar el texto y dar a COMPROBAR.";
             };
 
             speechRecognitionInstance.start();
         }
 
-        // Skip Speaking Exercise
         function skipSpeakingExercise() {
             showToast("Ejercicio de voz saltado.");
             loadNextQuestion();
@@ -1608,7 +1612,8 @@
                 if (isCorrect) speakFrench(currentItem.data.sentence);
             }
 
-            // Score update (+1 max 5, -1 min 0)
+            playSound(isCorrect ? 'correct' : 'incorrect');
+
             const targetData = currentItem.data || currentItem.item;
             if (targetData) {
                 if (isCorrect) {
@@ -1620,7 +1625,6 @@
             }
             saveDB();
 
-            // Feedback Drawer Rendering
             const drawer = document.getElementById('bottom-drawer');
             const feedbackContent = document.getElementById('feedback-content');
             const icon = document.getElementById('feedback-icon');
@@ -1651,6 +1655,7 @@
 
         function finishSession() {
             sessionCount++;
+            playSound('finish');
             
             let decayApplied = false;
             if (sessionCount % 10 === 0) {
@@ -1674,7 +1679,7 @@
                     <div class="summary-icon">🎉</div>
                     <h1 style="color: var(--duo-green-dark); margin-bottom: 10px;">¡Sesión Completada!</h1>
                     <p style="font-size: 1.1rem; color: var(--duo-text-muted); margin-bottom: 20px;">
-                        Completaste los 20 ejercicios y sus repasos.
+                        Completaste los ejercicios y sus repasos.
                     </p>
                     
                     <div style="background: var(--duo-gray-light); padding: 15px; border-radius: 12px; margin-bottom: 25px; text-align: left;">
@@ -1682,7 +1687,7 @@
                         ${decayApplied ? '<p style="color: #b78103; font-weight: 800; margin-top: 5px;">⏳ ¡10 sesiones cumplidas! Se redujo 1 pt de dominio a todo el conocimiento para repasar periódicamente.</p>' : `<p>Próximo ajuste automático en: <strong>${10 - (sessionCount % 10)} sesiones</strong>.</p>`}
                     </div>
 
-                    <button class="action-btn" onclick="startNewSession()">🚀 Iniciar Nueva Sesión (20 ejercicios)</button>
+                    <button class="action-btn" onclick="startNewSession()">🚀 Iniciar Nueva Sesión</button>
                 </div>
             `;
         }
@@ -1709,7 +1714,7 @@
             }
         }
 
-        // Export & Import Data JSON for Backup across browsers
+        // --- 6. Importar/Exportar y Guardar Contenido ---
         function exportDataJSON() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
             const dlAnchorElem = document.createElement('a');
@@ -1726,8 +1731,14 @@
                     const parsedData = JSON.parse(e.target.result);
                     if (parsedData.vocab && parsedData.grammar) {
                         db = parsedData;
+                        
+                        if(!db.fill) db.fill = [];
+                        if(!db.order) db.order = [];
+                        if(!db.phonemes) db.phonemes = [];
+
                         saveDB();
                         showToast("¡Base de datos cargada correctamente!");
+                        setTimeout(() => location.reload(), 1500); 
                     } else {
                         showToast("El archivo no tiene el formato correcto.");
                     }
@@ -1740,14 +1751,12 @@
             }
         }
 
-        // Toggle image input fields (Emoji vs File vs SVG)
         function toggleImgTypeInputs(prefix, selectedType) {
             document.getElementById(`${prefix}-input-emoji`).style.display = selectedType === 'emoji' ? 'block' : 'none';
             document.getElementById(`${prefix}-input-file`).style.display = selectedType === 'file' ? 'block' : 'none';
             document.getElementById(`${prefix}-input-svg`).style.display = selectedType === 'svg' ? 'block' : 'none';
         }
 
-        // Creator Items Addition
         function addVocabItem() {
             const fr = document.getElementById('add-vocab-fr').value.trim();
             const es = document.getElementById('add-vocab-es').value.trim();
@@ -1800,17 +1809,44 @@
             const symbol = document.getElementById('add-phoneme-symbol').value.trim();
             const word = document.getElementById('add-phoneme-word').value.trim();
             const trans = document.getElementById('add-phoneme-trans').value.trim();
-            const img = document.getElementById('add-phoneme-img').value.trim() || '🗣️';
+            const imgType = document.querySelector('input[name="phoneme-img-type"]:checked').value;
 
             if (!symbol || !word) return showToast("Ingresa el fonema y la palabra de ejemplo.");
 
-            db.phonemes.push({ id: 'p_' + Date.now(), symbol, word, trans, img, score: 0 });
-            document.getElementById('add-phoneme-symbol').value = '';
-            document.getElementById('add-phoneme-word').value = '';
-            document.getElementById('add-phoneme-trans').value = '';
-            document.getElementById('add-phoneme-img').value = '';
-            saveDB();
-            showToast("Fonema guardado.");
+            const newItem = { id: 'p_' + Date.now(), symbol, word, trans, score: 0 };
+
+            const saveAndReset = () => {
+                db.phonemes.push(newItem);
+                saveDB();
+                document.getElementById('add-phoneme-symbol').value = '';
+                document.getElementById('add-phoneme-word').value = '';
+                document.getElementById('add-phoneme-trans').value = '';
+                document.getElementById('add-phoneme-emoji').value = '';
+                document.getElementById('add-phoneme-file').value = '';
+                document.getElementById('add-phoneme-svg').value = '';
+                showToast("Fonema guardado.");
+            };
+
+            if (imgType === 'emoji') {
+                newItem.img = document.getElementById('add-phoneme-emoji').value.trim() || '🗣️';
+                saveAndReset();
+            } else if (imgType === 'svg') {
+                newItem.svgCode = document.getElementById('add-phoneme-svg').value.trim();
+                saveAndReset();
+            } else if (imgType === 'file') {
+                const fileInput = document.getElementById('add-phoneme-file');
+                if (fileInput.files && fileInput.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        newItem.imgDataUrl = e.target.result;
+                        saveAndReset();
+                    };
+                    reader.readAsDataURL(fileInput.files[0]);
+                } else {
+                    newItem.img = '🗣️';
+                    saveAndReset();
+                }
+            }
         }
 
         function addGrammarItem() {
@@ -1889,17 +1925,44 @@
             const title = document.getElementById('add-order-title').value.trim();
             const sentence = document.getElementById('add-order-sentence').value.trim();
             const extrasRaw = document.getElementById('add-order-extras').value.trim();
+            const imgType = document.querySelector('input[name="order-img-type"]:checked').value;
 
             if (!title || !sentence) return showToast("Completa el título y la oración.");
 
             const extras = extrasRaw ? extrasRaw.split(',').map(s => s.trim()) : [];
-            db.order.push({ id: 'o_' + Date.now(), title, sentence, extras, score: 0 });
+            const newItem = { id: 'o_' + Date.now(), title, sentence, extras, score: 0 };
 
-            document.getElementById('add-order-title').value = '';
-            document.getElementById('add-order-sentence').value = '';
-            document.getElementById('add-order-extras').value = '';
-            saveDB();
-            showToast("Ejercicio de reordenar guardado.");
+            const saveAndReset = () => {
+                db.order.push(newItem);
+                saveDB();
+                document.getElementById('add-order-title').value = '';
+                document.getElementById('add-order-sentence').value = '';
+                document.getElementById('add-order-extras').value = '';
+                document.getElementById('add-order-emoji').value = '';
+                document.getElementById('add-order-file').value = '';
+                document.getElementById('add-order-svg').value = '';
+                showToast("Ejercicio de reordenar guardado.");
+            };
+
+            if (imgType === 'emoji') {
+                newItem.img = document.getElementById('add-order-emoji').value.trim();
+                saveAndReset();
+            } else if (imgType === 'svg') {
+                newItem.svgCode = document.getElementById('add-order-svg').value.trim();
+                saveAndReset();
+            } else if (imgType === 'file') {
+                const fileInput = document.getElementById('add-order-file');
+                if (fileInput.files && fileInput.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        newItem.imgDataUrl = e.target.result;
+                        saveAndReset();
+                    };
+                    reader.readAsDataURL(fileInput.files[0]);
+                } else {
+                    saveAndReset();
+                }
+            }
         }
 
         function deleteItem(type, index) {
@@ -1930,7 +1993,7 @@
             `).join('');
         }
 
-        // App Launch
+        // --- 7. Inicialización de la Aplicación ---
         updateHeaderStats();
         startNewSession();
     </script>

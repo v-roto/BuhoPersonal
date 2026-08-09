@@ -1346,7 +1346,7 @@
                         ${item.item ? renderIllustrationHTML(item.item) : '<div style="font-size: 3.5rem;">🗣️</div>'}
                         <h3 style="font-size: 1.2rem;">${item.promptText}</h3>
                         <p style="color: var(--duo-purple-dark); font-weight: 800; font-size: 1.3rem;">"${item.targetText}"</p>
-                        <button class="speaker-btn" onclick="speakFrench('${item.targetText.replace(/'/g, "\\'")}')">🔊 Escuchar modelo</button>
+                        <button class="speaker-btn" onclick="speakFrench('${item.targetText.replace(/'/g, "\\'")}')">🔊</button>
                         
                         <div style="margin-top: 10px;">
                             <button class="mic-btn" id="mic-trigger-btn" onclick="toggleSpeechRecognition()">🎤</button>

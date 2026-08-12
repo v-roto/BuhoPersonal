@@ -14,19 +14,29 @@
 
     <!-- Header Bar -->
     <header>
-        <button class="nav-btn active" id="btn-mode-practice" onclick="switchView('practice')">🎮 Práctica</button>
-        <div class="progress-bar-container">
-            <div class="progress-bar-fill" id="progress-bar"></div>
-        </div>
-        <div class="stats-badge">
-            <div class="badge-item" title="Sesiones completadas">
-                <span>🔄</span> <span id="stat-sessions">0</span>
+        <div class="header-top-row">
+            <button class="nav-btn active" id="btn-mode-practice" onclick="switchView('practice')">🎮 Práctica</button>
+            <div class="topic-select-container">
+                <select id="topic-filter-select" class="duo-input" style="padding: 6px 10px; font-size: 0.9rem; height: auto;" onchange="changeTopicFilter()">
+                    <option value="all">📚 Todos los Temas</option>
+                </select>
             </div>
-            <div class="badge-item" title="Próximo decaimiento de puntos">
-                <span>⏳</span> <span id="stat-decay">10/10</span>
+            <div class="progress-bar-container desktop-progress">
+                <div class="progress-bar-fill" id="progress-bar"></div>
             </div>
+            <div class="stats-badge">
+                <div class="badge-item" title="Sesiones completadas">
+                    <span>🔄</span> <span id="stat-sessions">0</span>
+                </div>
+                <div class="badge-item" title="Próximo decaimiento de puntos">
+                    <span>⏳</span> <span id="stat-decay">10/10</span>
+                </div>
+            </div>
+            <button class="nav-btn" id="btn-mode-creator" onclick="switchView('creator')" style="margin-left: 10px;">➕ Contenido</button>
         </div>
-        <button class="nav-btn" id="btn-mode-creator" onclick="switchView('creator')" style="margin-left: 10px;">➕ Contenido</button>
+        <div class="progress-bar-container mobile-progress">
+            <div class="progress-bar-fill" id="progress-bar-mobile"></div>
+        </div>
     </header>
 
     <main>
@@ -41,12 +51,12 @@
         <section id="view-creator" class="view-section">
             <h1 style="margin-bottom: 10px;">Alimentar Base de Conocimiento</h1>
             <p style="margin-bottom: 20px; color: var(--duo-text-muted);">
-                Añade tus propias palabras, fonemas y conjugaciones. Soporta emojis, imágenes desde tu computadora y código SVG.
+                Añade tus propias palabras, fonemas y conjugaciones agrupadas por tema/bloque. Soporta emojis, imágenes desde tu computadora y código SVG.
             </p>
 
             <!-- 1. Vocab Form -->
             <div class="creator-card">
-                <h2>1. Vocabulario</h2>
+                <h2 id="vocab-form-title">1. Vocabulario</h2>
                 <div class="form-grid-2" style="margin-top: 10px;">
                     <div class="form-group">
                         <label>Palabra en Francés</label>
@@ -56,6 +66,10 @@
                         <label>Traducción al Español</label>
                         <input type="text" id="add-vocab-es" class="duo-input" placeholder="e.g. Manzana" autocomplete="off">
                     </div>
+                </div>
+                <div class="form-group">
+                    <label>Tema / Bloque</label>
+                    <input type="text" id="add-vocab-topic" class="duo-input" placeholder="e.g. Familia, Comida, General" autocomplete="off" value="General">
                 </div>
 
                 <div class="form-group">
@@ -71,13 +85,14 @@
                     <div id="vocab-input-svg" style="display:none;"><textarea id="add-vocab-svg" class="duo-input" style="height:70px;" placeholder='Código SVG...'></textarea></div>
                 </div>
 
-                <button class="action-btn" onclick="addVocabItem()">+ Guardar Vocabulario</button>
+                <button class="action-btn" id="vocab-submit-btn" onclick="addVocabItem()">+ Guardar Vocabulario</button>
+                <button class="action-btn" id="vocab-cancel-btn" style="background:var(--duo-text-muted); display:none; margin-top:8px;" onclick="cancelEdit('vocab')">Cancelar Edición</button>
                 <div class="item-list" id="list-vocab"></div>
             </div>
 
             <!-- 2. Phonemes Form -->
             <div class="creator-card">
-                <h2>2. Pronunciación de Fonemas y Letras</h2>
+                <h2 id="phoneme-form-title">2. Pronunciación de Fonemas y Letras</h2>
                 <div class="form-grid-3" style="margin-top: 10px;">
                     <div class="form-group">
                         <label>Letra / Fonema</label>
@@ -91,6 +106,10 @@
                         <label>Traducción Ejemplo (ES)</label>
                         <input type="text" id="add-phoneme-trans" class="duo-input" placeholder="e.g. col" autocomplete="off">
                     </div>
+                </div>
+                <div class="form-group">
+                    <label>Tema / Bloque</label>
+                    <input type="text" id="add-phoneme-topic" class="duo-input" placeholder="e.g. Fonética" autocomplete="off" value="General">
                 </div>
                 
                 <div class="form-group">
@@ -106,13 +125,14 @@
                     <div id="phoneme-input-svg" style="display:none;"><textarea id="add-phoneme-svg" class="duo-input" style="height:70px;" placeholder='Código SVG...'></textarea></div>
                 </div>
                 
-                <button class="action-btn" onclick="addPhonemeItem()">+ Guardar Fonema</button>
+                <button class="action-btn" id="phoneme-submit-btn" onclick="addPhonemeItem()">+ Guardar Fonema</button>
+                <button class="action-btn" id="phoneme-cancel-btn" style="background:var(--duo-text-muted); display:none; margin-top:8px;" onclick="cancelEdit('phoneme')">Cancelar Edición</button>
                 <div class="item-list" id="list-phonemes"></div>
             </div>
 
             <!-- 3. Grammar Form -->
             <div class="creator-card">
-                <h2>3. Tabla Gramatical (Conjugaciones)</h2>
+                <h2 id="grammar-form-title">3. Tabla Gramatical (Conjugaciones)</h2>
                 <div class="form-grid-2" style="margin-top: 10px;">
                     <div class="form-group">
                         <label>Verbo</label>
@@ -123,6 +143,10 @@
                         <input type="text" id="add-gram-tense" class="duo-input" placeholder="e.g. Présent" autocomplete="off">
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Tema / Bloque</label>
+                    <input type="text" id="add-gram-topic" class="duo-input" placeholder="e.g. Verbos" autocomplete="off" value="General">
+                </div>
                 <div class="form-grid-3">
                     <div class="form-group"><label>Je / J'</label><input type="text" id="add-gram-je" class="duo-input" placeholder="parle" autocomplete="off"></div>
                     <div class="form-group"><label>Tu</label><input type="text" id="add-gram-tu" class="duo-input" placeholder="parles" autocomplete="off"></div>
@@ -131,13 +155,14 @@
                     <div class="form-group"><label>Vous</label><input type="text" id="add-gram-vous" class="duo-input" placeholder="parlez" autocomplete="off"></div>
                     <div class="form-group"><label>Ils / Elles</label><input type="text" id="add-gram-ils" class="duo-input" placeholder="parlent" autocomplete="off"></div>
                 </div>
-                <button class="action-btn" onclick="addGrammarItem()">+ Guardar Tabla Gramatical</button>
+                <button class="action-btn" id="grammar-submit-btn" onclick="addGrammarItem()">+ Guardar Tabla Gramatical</button>
+                <button class="action-btn" id="grammar-cancel-btn" style="background:var(--duo-text-muted); display:none; margin-top:8px;" onclick="cancelEdit('grammar')">Cancelar Edición</button>
                 <div class="item-list" id="list-grammar"></div>
             </div>
 
             <!-- 4. Fill Sentence Form -->
             <div class="creator-card">
-                <h2>4. Completar Oración</h2>
+                <h2 id="fill-form-title">4. Completar Oración</h2>
                 <div class="form-group" style="margin-top: 10px;">
                     <label>Título / Instrucción</label>
                     <input type="text" id="add-fill-title" class="duo-input" placeholder="e.g. Completa la frase" autocomplete="off">
@@ -151,6 +176,10 @@
                         <label>Palabra Correcta</label>
                         <input type="text" id="add-fill-answer" class="duo-input" placeholder="e.g. mange" autocomplete="off">
                     </div>
+                </div>
+                <div class="form-group">
+                    <label>Tema / Bloque</label>
+                    <input type="text" id="add-fill-topic" class="duo-input" placeholder="e.g. Frases" autocomplete="off" value="General">
                 </div>
 
                 <div class="form-group">
@@ -166,13 +195,14 @@
                     <div id="fill-input-svg" style="display:none;"><textarea id="add-fill-svg" class="duo-input" style="height:70px;" placeholder='Código SVG...'></textarea></div>
                 </div>
 
-                <button class="action-btn" onclick="addFillItem()">+ Guardar Oración</button>
+                <button class="action-btn" id="fill-submit-btn" onclick="addFillItem()">+ Guardar Oración</button>
+                <button class="action-btn" id="fill-cancel-btn" style="background:var(--duo-text-muted); display:none; margin-top:8px;" onclick="cancelEdit('fill')">Cancelar Edición</button>
                 <div class="item-list" id="list-fill"></div>
             </div>
 
             <!-- 5. Order Sentence Form -->
             <div class="creator-card">
-                <h2>5. Reordenar Oración</h2>
+                <h2 id="order-form-title">5. Reordenar Oración</h2>
                 <div class="form-grid-2" style="margin-top: 10px;">
                     <div class="form-group">
                         <label>Traducción / Título</label>
@@ -186,6 +216,10 @@
                 <div class="form-group">
                     <label>Palabras Extra de Distracción (separadas por coma)</label>
                     <input type="text" id="add-order-extras" class="duo-input" placeholder="e.g. rouge, chien, mange" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Tema / Bloque</label>
+                    <input type="text" id="add-order-topic" class="duo-input" placeholder="e.g. Sintaxis" autocomplete="off" value="General">
                 </div>
                 
                 <div class="form-group">
@@ -201,16 +235,14 @@
                     <div id="order-input-svg" style="display:none;"><textarea id="add-order-svg" class="duo-input" style="height:70px;" placeholder='Código SVG...'></textarea></div>
                 </div>
                 
-                <button class="action-btn" onclick="addOrderItem()">+ Guardar Reordenar</button>
+                <button class="action-btn" id="order-submit-btn" onclick="addOrderItem()">+ Guardar Reordenar</button>
+                <button class="action-btn" id="order-cancel-btn" style="background:var(--duo-text-muted); display:none; margin-top:8px;" onclick="cancelEdit('order')">Cancelar Edición</button>
                 <div class="item-list" id="list-order"></div>
             </div>
 
             <!-- Custom Sounds Card -->
             <div class="creator-card" style="background: #fffde7; border-color: #ffd54f;">
                 <h2>🔔 Sonidos Personalizados de Respuesta y Fin de Sesión</h2>
-                <p style="font-size: 0.9rem; color: var(--duo-text-muted); margin-bottom: 12px;">
-                    Sube tus propios archivos de audio cortos. Si no se especifican, se utilizarán tonos sintéticos generados por el navegador.
-                </p>
                 <div class="form-grid-3">
                     <div class="form-group">
                         <label>Respuesta Correcta</label>
@@ -233,9 +265,6 @@
             <!-- Voice Settings Card -->
             <div class="creator-card" style="background: #faf5ff; border-color: #ce82ff;">
                 <h2>🎙️ Configuración de Voz Nativa del Dispositivo</h2>
-                <p style="font-size: 0.9rem; color: var(--duo-text-muted); margin-bottom: 12px;">
-                    Selecciona la voz nativa instalada en tu navegador o sistema operativo para la pronunciación.
-                </p>
                 <div class="form-group" id="group-browser-voice">
                     <label>Voz Nativa del Navegador (Francés)</label>
                     <select id="browser-voice-select" class="duo-input" onchange="updateVoiceSettings()">
@@ -250,9 +279,6 @@
             <!-- Backup & Restore Data Card -->
             <div class="creator-card" style="background: #f0f9ff; border-color: var(--duo-blue);">
                 <h2>💾 Copia de Seguridad y Datos (Estrellas)</h2>
-                <p style="font-size: 0.9rem; color: var(--duo-text-muted); margin-bottom: 12px;">
-                    Exporta tus ejercicios y estrellas acumuladas a un archivo para llevar tus progresos a otros navegadores o dispositivos.
-                </p>
                 <div class="form-grid-2">
                     <button class="action-btn" style="background: var(--duo-blue); border-color: var(--duo-blue-dark);" onclick="exportDataJSON()">📥 Exportar Respaldo (.json)</button>
                     <label class="action-btn" style="background: white; color: var(--duo-blue); border: 2px solid var(--duo-blue); border-bottom-width:4px; text-align:center; display:block; cursor:pointer;">

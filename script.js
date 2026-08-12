@@ -12,7 +12,7 @@ function showToast(msg) {
     }, 3000);
 }
 
-// --- 2. Sistema de Sonidos ---
+// --- 2. Sistema de Sonidos y Voz ---
 let globalAudioCtx = null; 
 
 function handleSoundUpload(event, type) {
@@ -95,56 +95,58 @@ function playFallbackSynthSound(type) {
     }
 }
 
-// --- 3. Base de Datos ---
+// --- 3. Base de Datos y Repetición Espaciada ---
 const defaultKnowledge = {
     vocab: [
-        { id: "v1", fr: "Pomme", es: "Manzana", img: "🍎", score: 0 },
-        { id: "v2", fr: "Chat", es: "Gato", img: "🐱", score: 0 },
-        { id: "v3", fr: "Voiture", es: "Coche / Auto", img: "🚗", score: 0 },
-        { id: "v4", fr: "Soleil", es: "Sol", img: "☀️", score: 0 },
-        { id: "v5", fr: "Livre", es: "Libro", img: "📚", score: 0 }
+        { id: "v1", fr: "Pomme", es: "Manzana", img: "🍎", score: 0, topic: "Comida" },
+        { id: "v2", fr: "Chat", es: "Gato", img: "🐱", score: 0, topic: "Animales" },
+        { id: "v3", fr: "Voiture", es: "Coche / Auto", img: "🚗", score: 0, topic: "Ciudad" },
+        { id: "v4", fr: "Soleil", es: "Sol", img: "☀️", score: 0, topic: "Naturaleza" },
+        { id: "v5", fr: "Livre", es: "Libro", img: "📚", score: 0, topic: "Estudio" }
     ],
     phonemes: [
-        { id: "p1", symbol: "ou", word: "chou", trans: "col / repollo", img: "🥬", score: 0 },
-        { id: "p2", symbol: "u", word: "lune", trans: "luna", img: "🌙", score: 0 },
-        { id: "p3", symbol: "eu", word: "fleur", trans: "flor", img: "🌸", score: 0 },
-        { id: "p4", symbol: "an / en", word: "vent", trans: "viento", img: "💨", score: 0 },
-        { id: "p5", symbol: "é", word: "café", trans: "café", img: "☕", score: 0 }
+        { id: "p1", symbol: "ou", word: "chou", trans: "col / repollo", img: "🥬", score: 0, topic: "Fonética" },
+        { id: "p2", symbol: "u", word: "lune", trans: "luna", img: "🌙", score: 0, topic: "Fonética" },
+        { id: "p3", symbol: "eu", word: "fleur", trans: "flor", img: "🌸", score: 0, topic: "Fonética" },
+        { id: "p4", symbol: "an / en", word: "vent", trans: "viento", img: "💨", score: 0, topic: "Fonética" },
+        { id: "p5", symbol: "é", word: "café", trans: "café", img: "☕", score: 0, topic: "Fonética" }
     ],
     grammar: [
         {
-            id: "g1", verb: "Parler", tense: "Présent de l'indicatif", score: 0,
+            id: "g1", verb: "Parler", tense: "Présent de l'indicatif", score: 0, topic: "Verbos",
             conjugations: { je: "parle", tu: "parles", il: "parle", nous: "parlons", vous: "parlez", ils: "parlent" }
         },
         {
-            id: "g2", verb: "Être", tense: "Présent de l'indicatif", score: 0,
+            id: "g2", verb: "Être", tense: "Présent de l'indicatif", score: 0, topic: "Verbos",
             conjugations: { je: "suis", tu: "es", il: "est", nous: "sommes", vous: "êtes", ils: "sont" }
         }
     ],
     fill: [
-        { id: "f1", title: "Completa la frase", sentence: "Je ___ une délicieuse pomme rouge.", answer: "mange", img: "🍎", score: 0 },
-        { id: "f2", title: "Completa con el artículo", sentence: "___ chat dort sur la chaise.", answer: "Le", img: "🐱", score: 0 }
+        { id: "f1", title: "Completa la frase", sentence: "Je ___ une délicieuse pomme rouge.", answer: "mange", img: "🍎", score: 0, topic: "Frases" },
+        { id: "f2", title: "Completa con el artículo", sentence: "___ chat dort sur la chaise.", answer: "Le", img: "🐱", score: 0, topic: "Frases" }
     ],
     order: [
-        { id: "o1", title: "Traduce: 'El gato come una manzana'", sentence: "Le chat mange une pomme", extras: ["chien", "rouge", "dans"], score: 0 },
-        { id: "o2", title: "Traduce: 'Nosotros hablamos francés'", sentence: "Nous parlons français", extras: ["espagnol", "êtes", "la"], score: 0 }
+        { id: "o1", title: "Traduce: 'El gato come una manzana'", sentence: "Le chat mange une pomme", extras: ["chien", "rouge", "dans"], score: 0, topic: "Sintaxis" },
+        { id: "o2", title: "Traduce: 'Nosotros hablamos francés'", sentence: "Nous parlons français", extras: ["espagnol", "êtes", "la"], score: 0, topic: "Sintaxis" }
     ]
 };
 
-let db = JSON.parse(localStorage.getItem('duo_french_db_v3')) || {};
+let db = JSON.parse(localStorage.getItem('duo_french_db_v4')) || {};
 if (!db.vocab) db.vocab = [...defaultKnowledge.vocab];
 if (!db.phonemes) db.phonemes = [...defaultKnowledge.phonemes];
 if (!db.grammar) db.grammar = [...defaultKnowledge.grammar];
 if (!db.fill) db.fill = [...defaultKnowledge.fill];
 if (!db.order) db.order = [...defaultKnowledge.order];
 
-let sessionCount = parseInt(localStorage.getItem('duo_french_sessions_v3')) || 0;
+let sessionCount = parseInt(localStorage.getItem('duo_french_sessions_v4')) || 0;
+let currentTopicFilter = 'all';
 
 function saveDB() {
-    localStorage.setItem('duo_french_db_v3', JSON.stringify(db));
-    localStorage.setItem('duo_french_sessions_v3', sessionCount.toString());
+    localStorage.setItem('duo_french_db_v4', JSON.stringify(db));
+    localStorage.setItem('duo_french_sessions_v4', sessionCount.toString());
     updateHeaderStats();
     renderCreatorLists();
+    populateTopicDropdown();
 }
 
 function updateHeaderStats() {
@@ -161,21 +163,22 @@ let isChecked = false;
 let selectedWords = [];
 let speechRecognitionInstance = null;
 let browserVoices = [];
+let questionStartTime = 0;
 
-// --- 4. Sistema de Voz Nativa ---
+// Editing state
+let editingItemId = null;
+let editingItemType = null;
+
+// --- 4. Sistema de Voz Nativa y TTS secuencial ---
 function populateBrowserVoices() {
     if ('speechSynthesis' in window) {
         let allVoices = window.speechSynthesis.getVoices();
         browserVoices = allVoices.filter(v => v.lang.toLowerCase().includes('fr'));
-        
-        if (browserVoices.length === 0) {
-            browserVoices = allVoices; 
-        }
+        if (browserVoices.length === 0) browserVoices = allVoices; 
 
         const select = document.getElementById('browser-voice-select');
         if (!select) return;
         select.innerHTML = '';
-        
         if (browserVoices.length === 0) {
             select.innerHTML = '<option value="">No se encontraron voces instaladas</option>';
         } else {
@@ -206,10 +209,8 @@ function speakFrench(text) {
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
-        
         utterance.lang = 'fr-FR'; 
-        utterance.rate = 0.98;
-        
+        utterance.rate = 1.2;
         const selectedVoiceName = localStorage.getItem('duo_french_browser_voice');
         if (selectedVoiceName && browserVoices.length > 0) {
             const found = browserVoices.find(v => v.name === selectedVoiceName);
@@ -219,6 +220,52 @@ function speakFrench(text) {
             }
         }
         window.speechSynthesis.speak(utterance);
+    }
+}
+
+function speakFrenchThenSound(text, soundType, onComplete) {
+    const actionBtn = document.getElementById('drawer-action-btn');
+    if (actionBtn) {
+        actionBtn.disabled = true;
+        actionBtn.style.opacity = '0.5';
+    }
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'fr-FR';
+        utterance.rate = 1.2;
+        const selectedVoiceName = localStorage.getItem('duo_french_browser_voice');
+        if (selectedVoiceName && browserVoices.length > 0) {
+            const found = browserVoices.find(v => v.name === selectedVoiceName);
+            if (found) {
+                utterance.voice = found;
+                utterance.lang = found.lang;
+            }
+        }
+        utterance.onend = function() {
+            playSound(soundType);
+            if (actionBtn) {
+                actionBtn.disabled = false;
+                actionBtn.style.opacity = '1';
+            }
+            if (onComplete) onComplete();
+        };
+        utterance.onerror = function() {
+            playSound(soundType);
+            if (actionBtn) {
+                actionBtn.disabled = false;
+                actionBtn.style.opacity = '1';
+            }
+            if (onComplete) onComplete();
+        };
+        window.speechSynthesis.speak(utterance);
+    } else {
+        playSound(soundType);
+        if (actionBtn) {
+            actionBtn.disabled = false;
+            actionBtn.style.opacity = '1';
+        }
+        if (onComplete) onComplete();
     }
 }
 
@@ -236,7 +283,55 @@ function testSelectedVoice() {
     speakFrench("Bonjour! Bienvenue dans vos leçons de français.");
 }
 
-// --- 5. Lógica del Modo Práctica ---
+// --- 5. Spaced Repetition Rules (0 to 5 / Platinum) ---
+function getRequiredDays(score) {
+    if (score === 0) return 0;
+    if (score === 1) return 1;
+    if (score === 2) return 4;
+    if (score === 3) return 12;
+    if (score === 4) return 30;
+    if (score === 5) return 90;
+    return 999999; // Platinum (score >= 6)
+}
+
+function isItemDue(item) {
+    const score = item.score || 0;
+    if (score >= 6) return false; // Platinum
+    if (score === 0) return true;
+    const lastAsked = item.lastAskedDate || 0;
+    const daysElapsed = (Date.now() - lastAsked) / (1000 * 60 * 60 * 24);
+    return daysElapsed >= getRequiredDays(score);
+}
+
+function populateTopicDropdown() {
+    const select = document.getElementById('topic-filter-select');
+    if (!select) return;
+    const topics = new Set(['General']);
+    ['vocab', 'phonemes', 'grammar', 'fill', 'order'].forEach(cat => {
+        if (db[cat]) {
+            db[cat].forEach(i => {
+                if (i.topic) topics.add(i.topic);
+            });
+        }
+    });
+
+    const currentVal = select.value;
+    select.innerHTML = '<option value="all">📚 Todos los Temas</option>';
+    topics.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = `📁 ${t}`;
+        select.appendChild(opt);
+    });
+    select.value = topics.has(currentVal) || currentVal === 'all' ? currentVal : 'all';
+}
+
+function changeTopicFilter() {
+    currentTopicFilter = document.getElementById('topic-filter-select').value;
+    startNewSession();
+}
+
+// --- 6. Lógica del Modo Práctica ---
 function renderIllustrationHTML(item) {
     if (item.imgDataUrl) {
         return `<div class="illustration-box"><img src="${item.imgDataUrl}" alt="Illustration"></div>`;
@@ -247,7 +342,6 @@ function renderIllustrationHTML(item) {
     }
 }
 
-// Mini render para el ejemplo pequeño de los fonemas
 function renderMiniIllustrationHTML(item) {
     if (item.imgDataUrl) return `<img src="${item.imgDataUrl}" style="height: 30px; vertical-align: middle; margin-left: 5px; border-radius: 4px;">`;
     if (item.svgCode) return `<span style="display:inline-block; width:30px; height:30px; vertical-align:middle; margin-left:5px;">${item.svgCode}</span>`;
@@ -257,46 +351,69 @@ function renderMiniIllustrationHTML(item) {
 function startNewSession() {
     let pool = [];
 
+    const matchesTopic = (item) => {
+        if (currentTopicFilter === 'all') return true;
+        return (item.topic || 'General') === currentTopicFilter;
+    };
+
     if(db.vocab) {
         db.vocab.forEach(item => {
-            pool.push({ category: 'vocab', type: 'vocab_type', isSpeaking: false, data: item, score: item.score || 0 });
-            pool.push({ category: 'vocab', type: 'speaking', isSpeaking: true, targetText: item.fr, promptText: `Pronuncia la palabra`, item: item, score: item.score || 0 });
+            if (matchesTopic(item)) {
+                pool.push({ category: 'vocab', type: 'vocab_type', isSpeaking: false, data: item, score: item.score || 0 });
+                pool.push({ category: 'vocab', type: 'speaking', isSpeaking: true, targetText: item.fr, promptText: `Pronuncia la palabra`, item: item, score: item.score || 0 });
+            }
         });
     }
     if(db.grammar) {
-        db.grammar.forEach(item => pool.push({ category: 'grammar', type: 'grammar', isSpeaking: false, data: item, score: item.score || 0 }));
+        db.grammar.forEach(item => {
+            if (matchesTopic(item)) {
+                pool.push({ category: 'grammar', type: 'grammar', isSpeaking: false, data: item, score: item.score || 0 });
+            }
+        });
     }
     if(db.fill) {
         db.fill.forEach(item => {
-            pool.push({ category: 'fill', type: 'fill', isSpeaking: false, data: item, score: item.score || 0 });
-            const parts = item.sentence.split('___');
-            const answers = item.answer.split(/[,/]/).map(s => s.trim());
-            let fullSentence = "";
-            parts.forEach((p, idx) => fullSentence += p + (answers[idx] || answers[0] || ""));
-            pool.push({ category: 'fill', type: 'speaking', isSpeaking: true, targetText: fullSentence.trim(), promptText: `Pronuncia la oración completa: "${item.title}"`, item: item, score: item.score || 0 });
+            if (matchesTopic(item)) {
+                pool.push({ category: 'fill', type: 'fill', isSpeaking: false, data: item, score: item.score || 0 });
+                const parts = item.sentence.split('___');
+                const answers = item.answer.split(/[,/]/).map(s => s.trim());
+                let fullSentence = "";
+                parts.forEach((p, idx) => fullSentence += p + (answers[idx] || answers[0] || ""));
+                pool.push({ category: 'fill', type: 'speaking', isSpeaking: true, targetText: fullSentence.trim(), promptText: `Pronuncia la oración completa: "${item.title}"`, item: item, score: item.score || 0 });
+            }
         });
     }
     if(db.order) {
         db.order.forEach(item => {
-            pool.push({ category: 'order', type: 'order', isSpeaking: false, data: item, score: item.score || 0 });
-            pool.push({ category: 'order', type: 'speaking', isSpeaking: true, targetText: item.sentence, promptText: `Pronuncia la oración: "${item.title}"`, item: item, score: item.score || 0 });
+            if (matchesTopic(item)) {
+                pool.push({ category: 'order', type: 'order', isSpeaking: false, data: item, score: item.score || 0 });
+                pool.push({ category: 'order', type: 'speaking', isSpeaking: true, targetText: item.sentence, promptText: `Pronuncia la oración: "${item.title}"`, item: item, score: item.score || 0 });
+            }
         });
     }
     if(db.phonemes) {
-        db.phonemes.forEach(item => pool.push({ category: 'phoneme', type: 'phoneme_speak', isSpeaking: true, data: item, score: item.score || 0 }));
+        db.phonemes.forEach(item => {
+            if (matchesTopic(item)) {
+                pool.push({ category: 'phoneme', type: 'phoneme_speak', isSpeaking: true, data: item, score: item.score || 0 });
+            }
+        });
     }
 
-    let nonSpeakingPool = pool.filter(i => !i.isSpeaking);
-    let speakingPool = pool.filter(i => i.isSpeaking);
+    // Filter due items (score 0 asked first, then due spaced repetition items)
+    let duePool = pool.filter(i => isItemDue(i.data || i.item));
+    if (duePool.length === 0) {
+        duePool = pool; // Fallback to all if none due
+    }
 
-    const sortByScore = (a, b) => (a.score + Math.random() * 0.8) - (b.score + Math.random() * 0.8);
-    nonSpeakingPool.sort(sortByScore);
-    speakingPool.sort(sortByScore);
+    duePool.sort((a, b) => {
+        const scoreA = a.score || 0;
+        const scoreB = b.score || 0;
+        if (scoreA === 0 && scoreB !== 0) return -1;
+        if (scoreB === 0 && scoreA !== 0) return 1;
+        return scoreA - scoreB;
+    });
 
-    let selectedWritten = nonSpeakingPool.slice(0, 15);
-    let selectedSpeaking = speakingPool.slice(0, 5);
-
-    sessionQueue = [...selectedWritten, ...selectedSpeaking];
+    sessionQueue = duePool.slice(0, 15);
     retryQueue = [];
     isRetryMode = false;
 
@@ -327,41 +444,53 @@ function renderExercise(item) {
     const actionBtn = document.getElementById('drawer-action-btn');
     actionBtn.textContent = 'COMPROBAR';
     actionBtn.className = 'check-btn';
+    actionBtn.disabled = false;
+    actionBtn.style.opacity = '1';
     isChecked = false;
     selectedWords = [];
+    questionStartTime = Date.now();
 
-    const totalInSession = 20;
+    const totalInSession = 15;
     const remaining = sessionQueue.length + retryQueue.length + 1;
     const progress = Math.min(100, Math.max(5, ((totalInSession - remaining) / totalInSession) * 100));
     document.getElementById('progress-bar').style.width = `${progress}%`;
+    const mobileProg = document.getElementById('progress-bar-mobile');
+    if (mobileProg) mobileProg.style.width = `${progress}%`;
 
     const isSpeakingBadge = item.isSpeaking ? 'speaking-badge' : '';
+    const scoreVal = item.score || 0;
+    const scoreLabel = scoreVal >= 6 ? '💎 Platinum' : `⭐ Dominio: ${scoreVal}/5`;
     const levelBadgeHTML = `
         <div class="level-pill ${isSpeakingBadge}">
-            ${item.isSpeaking ? '🎙️ Micrófono • ' : ''}⭐ Dominio: ${item.score}/5 ${isRetryMode ? '• 🔁 Repaso' : ''}
+            ${item.isSpeaking ? '🎙️ Micrófono • ' : ''}${scoreLabel} ${isRetryMode ? '• 🔁 Repaso' : ''}
         </div>`;
+
+    const wrapTitleWithBadge = (titleText) => `
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+            <h2 class="exercise-title" style="margin: 0;">${titleText}</h2>
+            ${levelBadgeHTML}
+        </div>
+    `;
 
     if (item.type === 'vocab_type') {
         container.innerHTML = `
-            ${levelBadgeHTML}
-            <h2 class="exercise-title">Escribe la palabra en francés</h2>
+            ${wrapTitleWithBadge('Escribe la palabra en francés')}
             <div class="vocab-card">
                 ${renderIllustrationHTML(item.data)}
-                <button class="speaker-btn hint-btn" onclick="speakFrench('${item.data.fr.replace(/'/g, "\\'")}')">💡 Escuchar Pista Audio</button>
+                <button class="speaker-btn hint-btn" onmousedown="event.preventDefault()" onclick="speakFrench('${item.data.fr.replace(/'/g, "\\'")}')">💡 Escuchar Pista Audio</button>
             </div>
             <input type="text" id="user-input" class="duo-input" placeholder="Escribe en francés..." autocomplete="off">
         `;
     } 
     else if (item.type === 'phoneme_speak') {
         container.innerHTML = `
-            ${levelBadgeHTML}
-            <h2 class="exercise-title">Pronunciación de Letras y Fonemas 🎙️</h2>
+            ${wrapTitleWithBadge('Pronunciación de Letras y Fonemas 🎙️')}
             <div class="speaking-card">
                 
                 <div class="phoneme-combined-card">
                     <div class="phoneme-header-row">
                         <span class="phoneme-symbol-text">${item.data.symbol}</span>
-                        <button class="speaker-btn" onclick="speakFrench('${item.data.symbol.replace(/'/g, "\\'")}')">🔊</button>
+                        <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="speakFrench('${item.data.symbol.replace(/'/g, "\\'")}')">🔊</button>
                     </div>
                     <div class="phoneme-example-row">
                         <div>
@@ -370,7 +499,7 @@ function renderExercise(item) {
                             <span style="color: var(--duo-text-muted); font-size: 0.9rem;"> (${item.data.trans})</span>
                             ${renderMiniIllustrationHTML(item.data)}
                         </div>
-                        <button class="speaker-btn" style="width: 34px; height: 34px; font-size: 0.95rem;" onclick="speakFrench('${item.data.word.replace(/'/g, "\\'")}')">🔊</button>
+                        <button class="speaker-btn" style="width: 34px; height: 34px; font-size: 0.95rem;" onmousedown="event.preventDefault()" onclick="speakFrench('${item.data.word.replace(/'/g, "\\'")}')">🔊</button>
                     </div>
                 </div>
 
@@ -390,13 +519,12 @@ function renderExercise(item) {
     }
     else if (item.type === 'speaking') {
         container.innerHTML = `
-            ${levelBadgeHTML}
-            <h2 class="exercise-title">¡Ejercicio de Pronunciación! 🎙️</h2>
+            ${wrapTitleWithBadge('¡Ejercicio de Pronunciación! 🎙️')}
             <div class="speaking-card">
                 ${item.item ? renderIllustrationHTML(item.item) : '<div style="font-size: 3.5rem;">🗣️</div>'}
                 <h3 style="font-size: 1.2rem;">${item.promptText}</h3>
                 <p style="color: var(--duo-purple-dark); font-weight: 800; font-size: 1.3rem;">"${item.targetText}"</p>
-                <button class="speaker-btn" onclick="speakFrench('${item.targetText.replace(/'/g, "\\'")}')">🔊</button>
+                <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="speakFrench('${item.targetText.replace(/'/g, "\\'")}')">🔊</button>
                 
                 <div style="margin-top: 10px;">
                     <button class="mic-btn" id="mic-trigger-btn" onclick="toggleSpeechRecognition()">🎤</button>
@@ -414,12 +542,11 @@ function renderExercise(item) {
     }
     else if (item.type === 'grammar') {
         container.innerHTML = `
-            ${levelBadgeHTML}
+            ${wrapTitleWithBadge('Completa la tabla de conjugación')}
             <div class="instruction-box">
-                <button class="speaker-btn" onclick="speakFrench('${item.data.verb.replace(/'/g, "\\'")}')">🔊</button>
+                <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="speakFrench('${item.data.verb.replace(/'/g, "\\'")}')">🔊</button>
                 <div>
-                    <h2 style="font-size: 1.25rem;">Completa la tabla de conjugación</h2>
-                    <p style="color: var(--duo-text-muted);">Verbo: <strong>${item.data.verb}</strong> | Tiempo: <strong>${item.data.tense}</strong></p>
+                    <p style="color: var(--duo-text-muted); margin:0;">Verbo: <strong>${item.data.verb}</strong> | Tiempo: <strong>${item.data.tense}</strong></p>
                 </div>
             </div>
             <div class="grammar-table-container">
@@ -449,8 +576,7 @@ function renderExercise(item) {
         });
 
         container.innerHTML = `
-            ${levelBadgeHTML}
-            <h2 class="exercise-title">${item.data.title}</h2>
+            ${wrapTitleWithBadge(item.data.title)}
             ${renderIllustrationHTML(item.data)}
             <div class="fill-blank-sentence">
                 ${sentenceHTML}
@@ -462,10 +588,9 @@ function renderExercise(item) {
         const allWords = [...targetWords, ...item.data.extras].sort(() => Math.random() - 0.5);
 
         container.innerHTML = `
-            ${levelBadgeHTML}
+            ${wrapTitleWithBadge(item.data.title)}
             <div class="instruction-box">
-                <button class="speaker-btn" onclick="speakFrench('${item.data.sentence.replace(/'/g, "\\'")}')">🔊</button>
-                <h2 class="exercise-title" style="margin:0;">${item.data.title}</h2>
+                <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="speakFrench('${item.data.sentence.replace(/'/g, "\\'")}')">🔊</button>
             </div>
             ${item.data.img || item.data.imgDataUrl || item.data.svgCode ? renderIllustrationHTML(item.data) : ''}
             <div class="sentence-target-area" id="target-word-area"></div>
@@ -477,8 +602,6 @@ function renderExercise(item) {
         `;
     }
     
-    // AUTOFOCUS CONDICIONAL: Solo para ejercicios que NO sean de hablar 
-    // (y también nos saltamos el de reordenar porque se hace con botones, no tiene input text)
     if (!item.isSpeaking && item.type !== 'order') {
         setTimeout(() => {
             const firstInput = document.querySelector('#view-practice input[type="text"]:not([disabled])');
@@ -503,7 +626,6 @@ document.addEventListener('keydown', function(e) {
 // Speech Recognition API
 function toggleSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
     if (!SpeechRecognition) {
         showToast("Tu navegador no soporta captura de voz nativa.");
         return;
@@ -530,10 +652,10 @@ function toggleSpeechRecognition() {
 
     speechRecognitionInstance.onresult = function(event) {
         let currentTranscript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            currentTranscript += event.results[i][0].transcript;
+        if (event.results && event.results.length > 0) {
+            currentTranscript = event.results[event.results.length - 1][0].transcript;
         }
-        if (inputField) inputField.value = currentTranscript;
+        if (inputField) inputField.value = currentTranscript.trim();
     };
 
     speechRecognitionInstance.onerror = function() {
@@ -593,12 +715,14 @@ function cleanStr(str) {
 function checkAnswer() {
     let isCorrect = false;
     let correctSolutionText = '';
+    let textToSpeak = '';
+    const elapsedSec = (Date.now() - questionStartTime) / 1000;
 
     if (currentItem.type === 'vocab_type') {
         const val = document.getElementById('user-input').value.trim();
         isCorrect = (cleanStr(val) === cleanStr(currentItem.data.fr));
         correctSolutionText = `${currentItem.data.fr} = ${currentItem.data.es}`;
-        if (isCorrect) speakFrench(currentItem.data.fr);
+        textToSpeak = currentItem.data.fr;
     } else if (currentItem.type === 'phoneme_speak') {
         const val = document.getElementById('user-speech-input').value.trim();
         const cleanInput = cleanStr(val);
@@ -607,6 +731,7 @@ function checkAnswer() {
 
         isCorrect = (cleanInput.length > 0 && (cleanInput.includes(cleanSym) || cleanInput.includes(cleanWord) || cleanSym.includes(cleanInput)));
         correctSolutionText = `Fonema: "${currentItem.data.symbol}" | Ejemplo: "${currentItem.data.word}" (${currentItem.data.trans})`;
+        textToSpeak = currentItem.data.word;
     } else if (currentItem.type === 'speaking') {
         const val = document.getElementById('user-speech-input').value.trim();
         const cleanTarget = cleanStr(currentItem.targetText);
@@ -614,23 +739,41 @@ function checkAnswer() {
         
         isCorrect = (cleanInput.length > 0 && (cleanTarget === cleanInput || cleanInput.includes(cleanTarget) || cleanTarget.includes(cleanInput)));
         correctSolutionText = currentItem.targetText;
+        textToSpeak = currentItem.targetText;
     } else if (currentItem.type === 'grammar') {
         const c = currentItem.data.conjugations;
-        const userJe = document.getElementById('gram-je').value.trim();
-        const userTu = document.getElementById('gram-tu').value.trim();
-        const userIl = document.getElementById('gram-il').value.trim();
-        const userNous = document.getElementById('gram-nous').value.trim();
-        const userVous = document.getElementById('gram-vous').value.trim();
-        const userIls = document.getElementById('gram-ils').value.trim();
+        const inputs = {
+            je: document.getElementById('gram-je'),
+            tu: document.getElementById('gram-tu'),
+            il: document.getElementById('gram-il'),
+            nous: document.getElementById('gram-nous'),
+            vous: document.getElementById('gram-vous'),
+            ils: document.getElementById('gram-ils')
+        };
+        const userVals = {
+            je: inputs.je.value.trim(),
+            tu: inputs.tu.value.trim(),
+            il: inputs.il.value.trim(),
+            nous: inputs.nous.value.trim(),
+            vous: inputs.vous.value.trim(),
+            ils: inputs.ils.value.trim()
+        };
 
-        isCorrect = (cleanStr(userJe) === cleanStr(c.je) &&
-                     cleanStr(userTu) === cleanStr(c.tu) &&
-                     cleanStr(userIl) === cleanStr(c.il) &&
-                     cleanStr(userNous) === cleanStr(c.nous) &&
-                     cleanStr(userVous) === cleanStr(c.vous) &&
-                     cleanStr(userIls) === cleanStr(c.ils));
+        let allGrammarCorrect = true;
+        Object.keys(c).forEach(k => {
+            if (cleanStr(userVals[k]) !== cleanStr(c[k])) {
+                allGrammarCorrect = false;
+                if (inputs[k]) {
+                    inputs[k].style.borderColor = 'var(--duo-red)';
+                    inputs[k].style.background = 'var(--duo-red-light)';
+                    inputs[k].title = `Correcto: ${c[k]}`;
+                }
+            }
+        });
 
+        isCorrect = allGrammarCorrect;
         correctSolutionText = `${c.je}, ${c.tu}, ${c.il}, ${c.nous}, ${c.vous}, ${c.ils}`;
+        textToSpeak = currentItem.data.verb;
     } else if (currentItem.type === 'fill') {
         const fillInputs = document.querySelectorAll('.fill-blank-input');
         const answers = currentItem.data.answer.split(/[,/]/).map(a => cleanStr(a));
@@ -647,60 +790,73 @@ function checkAnswer() {
         isCorrect = allCorrect;
         correctSolutionText = currentItem.data.answer;
 
-        if (isCorrect) {
-            const parts = currentItem.data.sentence.split('___');
-            let spokenSentence = "";
-            parts.forEach((p, idx) => {
-                spokenSentence += p + (fillInputs[idx] ? fillInputs[idx].value : '');
-            });
-            speakFrench(spokenSentence);
-        }
+        const parts = currentItem.data.sentence.split('___');
+        let spokenSentence = "";
+        parts.forEach((p, idx) => {
+            spokenSentence += p + (fillInputs[idx] && fillInputs[idx].value ? fillInputs[idx].value : (currentItem.data.answer.split(/[,/]/)[0] || ''));
+        });
+        textToSpeak = spokenSentence.trim();
     } else if (currentItem.type === 'order') {
         const userSentence = selectedWords.map(sw => sw.word).join(' ').trim();
         isCorrect = (cleanStr(userSentence) === cleanStr(currentItem.data.sentence));
         correctSolutionText = currentItem.data.sentence;
-        if (isCorrect) speakFrench(currentItem.data.sentence);
+        textToSpeak = currentItem.data.sentence;
     }
 
-    playSound(isCorrect ? 'correct' : 'incorrect');
-
+    // Spaced repetition score updating
     const targetData = currentItem.data || currentItem.item;
     if (targetData) {
-        if (isCorrect) {
-            targetData.score = Math.min(5, (targetData.score || 0) + 1);
-        } else {
-            targetData.score = Math.max(0, (targetData.score || 0) - 1);
+        targetData.lastAskedDate = Date.now();
+        const currentScore = targetData.score || 0;
+        if (!isCorrect) {
+            targetData.score = 1; // Incorrect resets to 1
             retryQueue.push(currentItem);
+        } else {
+            const isGrammar = (currentItem.type === 'grammar');
+            const fastLimit = isGrammar ? 35 : 10;
+            const slowLimit = isGrammar ? 50 : 15;
+
+            if (currentScore === 0) {
+                targetData.score = 1; // 0 moves to 1 when correctly answered
+            } else if (elapsedSec < fastLimit) {
+                targetData.score = Math.min(5, currentScore + 1);
+            } else if (elapsedSec > slowLimit) {
+                targetData.score = Math.max(1, currentScore - 1);
+            }
+            // Interval stays same
         }
     }
     saveDB();
 
-    const drawer = document.getElementById('bottom-drawer');
-    const feedbackContent = document.getElementById('feedback-content');
-    const icon = document.getElementById('feedback-icon');
-    const title = document.getElementById('feedback-title');
-    const subtext = document.getElementById('feedback-subtext');
-    const actionBtn = document.getElementById('drawer-action-btn');
+    // Play TTS first, then right/wrong sound after TTS completes, blocking progress until TTS completes
+    speakFrenchThenSound(textToSpeak || correctSolutionText, isCorrect ? 'correct' : 'incorrect', () => {
+        const drawer = document.getElementById('bottom-drawer');
+        const feedbackContent = document.getElementById('feedback-content');
+        const icon = document.getElementById('feedback-icon');
+        const title = document.getElementById('feedback-title');
+        const subtext = document.getElementById('feedback-subtext');
+        const actionBtn = document.getElementById('drawer-action-btn');
 
-    feedbackContent.style.visibility = 'visible';
+        feedbackContent.style.visibility = 'visible';
 
-    if (isCorrect) {
-        drawer.className = 'bottom-drawer correct';
-        icon.textContent = '✓';
-        title.textContent = '¡Excelente! (+1 pt dominio)';
-        subtext.textContent = `Solución: ${correctSolutionText}`;
-        actionBtn.textContent = 'CONTINUAR';
-        actionBtn.className = 'check-btn';
-    } else {
-        drawer.className = 'bottom-drawer incorrect';
-        icon.textContent = '✕';
-        title.textContent = 'Incorrecto (-1 pt). Lo repasaremos al final:';
-        subtext.textContent = correctSolutionText;
-        actionBtn.textContent = 'ENTENDIDO';
-        actionBtn.className = 'check-btn btn-incorrect';
-    }
+        if (isCorrect) {
+            drawer.className = 'bottom-drawer correct';
+            icon.textContent = '✓';
+            title.textContent = '¡Excelente!';
+            subtext.textContent = `Solución: ${correctSolutionText}`;
+            actionBtn.textContent = 'CONTINUAR';
+            actionBtn.className = 'check-btn';
+        } else {
+            drawer.className = 'bottom-drawer incorrect';
+            icon.textContent = '✕';
+            title.textContent = 'Incorrecto. Lo repasaremos al final:';
+            subtext.textContent = correctSolutionText;
+            actionBtn.textContent = 'ENTENDIDO';
+            actionBtn.className = 'check-btn btn-incorrect';
+        }
 
-    isChecked = true;
+        isChecked = true;
+    });
 }
 
 function finishSession() {
@@ -713,7 +869,7 @@ function finishSession() {
         ['vocab', 'phonemes', 'grammar', 'fill', 'order'].forEach(cat => {
             if (db[cat]) {
                 db[cat].forEach(item => {
-                    item.score = Math.max(0, (item.score || 0) - 1);
+                    item.score = Math.max(1, (item.score || 1) - 1);
                 });
             }
         });
@@ -723,18 +879,20 @@ function finishSession() {
     document.getElementById('bottom-drawer').style.display = 'none';
     const container = document.getElementById('exercise-container');
     document.getElementById('progress-bar').style.width = '100%';
+    const mobileProg = document.getElementById('progress-bar-mobile');
+    if (mobileProg) mobileProg.style.width = '100%';
 
     container.innerHTML = `
         <div class="summary-card">
             <div class="summary-icon">🎉</div>
             <h1 style="color: var(--duo-green-dark); margin-bottom: 10px;">¡Sesión Completada!</h1>
             <p style="font-size: 1.1rem; color: var(--duo-text-muted); margin-bottom: 20px;">
-                Completaste los ejercicios y sus repasos.
+                Completaste los ejercicios y sus repasos de Spaced Repetition.
             </p>
             
             <div style="background: var(--duo-gray-light); padding: 15px; border-radius: 12px; margin-bottom: 25px; text-align: left;">
                 <p><strong>Sesiones completadas:</strong> ${sessionCount}</p>
-                ${decayApplied ? '<p style="color: #b78103; font-weight: 800; margin-top: 5px;">⏳ ¡10 sesiones cumplidas! Se redujo 1 pt de dominio a todo el conocimiento para repasar periódicamente.</p>' : `<p>Próximo ajuste automático en: <strong>${10 - (sessionCount % 10)} sesiones</strong>.</p>`}
+                ${decayApplied ? '<p style="color: #b78103; font-weight: 800; margin-top: 5px;">⏳ ¡10 sesiones cumplidas! Ajuste periódico aplicado.</p>' : `<p>Próximo ajuste automático en: <strong>${10 - (sessionCount % 10)} sesiones</strong>.</p>`}
             </div>
 
             <button class="action-btn" onclick="startNewSession()">🚀 Iniciar Nueva Sesión</button>
@@ -764,7 +922,7 @@ function switchView(view) {
     }
 }
 
-// --- 6. Importar/Exportar y Guardar Contenido ---
+// --- 7. Importar/Exportar y Editar Contenido ---
 function exportDataJSON() {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
     const dlAnchorElem = document.createElement('a');
@@ -781,11 +939,9 @@ function importDataJSON(event) {
             const parsedData = JSON.parse(e.target.result);
             if (parsedData.vocab && parsedData.grammar) {
                 db = parsedData;
-                
                 if(!db.fill) db.fill = [];
                 if(!db.order) db.order = [];
                 if(!db.phonemes) db.phonemes = [];
-
                 saveDB();
                 showToast("¡Base de datos cargada correctamente!");
                 setTimeout(() => location.reload(), 1500); 
@@ -807,41 +963,160 @@ function toggleImgTypeInputs(prefix, selectedType) {
     document.getElementById(`${prefix}-input-svg`).style.display = selectedType === 'svg' ? 'block' : 'none';
 }
 
+// EDIT ITEM FUNCTIONS
+function editItem(type, index) {
+    const item = db[type][index];
+    if (!item) return;
+    editingItemId = item.id;
+    editingItemType = type;
+
+    if (type === 'vocab') {
+        document.getElementById('add-vocab-fr').value = item.fr || '';
+        document.getElementById('add-vocab-es').value = item.es || '';
+        document.getElementById('add-vocab-topic').value = item.topic || 'General';
+        if (item.img) document.getElementById('add-vocab-emoji').value = item.img;
+        document.getElementById('vocab-form-title').textContent = "Editar Vocabulario";
+        document.getElementById('vocab-submit-btn').textContent = "Actualizar Vocabulario";
+        document.getElementById('vocab-cancel-btn').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (type === 'phonemes') {
+        document.getElementById('add-phoneme-symbol').value = item.symbol || '';
+        document.getElementById('add-phoneme-word').value = item.word || '';
+        document.getElementById('add-phoneme-trans').value = item.trans || '';
+        document.getElementById('add-phoneme-topic').value = item.topic || 'General';
+        if (item.img) document.getElementById('add-phoneme-emoji').value = item.img;
+        document.getElementById('phoneme-form-title').textContent = "Editar Fonema";
+        document.getElementById('phoneme-submit-btn').textContent = "Actualizar Fonema";
+        document.getElementById('phoneme-cancel-btn').style.display = 'block';
+    } else if (type === 'grammar') {
+        document.getElementById('add-gram-verb').value = item.verb || '';
+        document.getElementById('add-gram-tense').value = item.tense || '';
+        document.getElementById('add-gram-topic').value = item.topic || 'General';
+        if (item.conjugations) {
+            document.getElementById('add-gram-je').value = item.conjugations.je || '';
+            document.getElementById('add-gram-tu').value = item.conjugations.tu || '';
+            document.getElementById('add-gram-il').value = item.conjugations.il || '';
+            document.getElementById('add-gram-nous').value = item.conjugations.nous || '';
+            document.getElementById('add-gram-vous').value = item.conjugations.vous || '';
+            document.getElementById('add-gram-ils').value = item.conjugations.ils || '';
+        }
+        document.getElementById('grammar-form-title').textContent = "Editar Tabla Gramatical";
+        document.getElementById('grammar-submit-btn').textContent = "Actualizar Tabla";
+        document.getElementById('grammar-cancel-btn').style.display = 'block';
+    } else if (type === 'fill') {
+        document.getElementById('add-fill-title').value = item.title || '';
+        document.getElementById('add-fill-sentence').value = item.sentence || '';
+        document.getElementById('add-fill-answer').value = item.answer || '';
+        document.getElementById('add-fill-topic').value = item.topic || 'General';
+        if (item.img) document.getElementById('add-fill-emoji').value = item.img;
+        document.getElementById('fill-form-title').textContent = "Editar Oración";
+        document.getElementById('fill-submit-btn').textContent = "Actualizar Oración";
+        document.getElementById('fill-cancel-btn').style.display = 'block';
+    } else if (type === 'order') {
+        document.getElementById('add-order-title').value = item.title || '';
+        document.getElementById('add-order-sentence').value = item.sentence || '';
+        document.getElementById('add-order-extras').value = item.extras ? item.extras.join(', ') : '';
+        document.getElementById('add-order-topic').value = item.topic || 'General';
+        if (item.img) document.getElementById('add-order-emoji').value = item.img;
+        document.getElementById('order-form-title').textContent = "Editar Reordenar";
+        document.getElementById('order-submit-btn').textContent = "Actualizar Reordenar";
+        document.getElementById('order-cancel-btn').style.display = 'block';
+    }
+}
+
+function cancelEdit(type) {
+    editingItemId = null;
+    editingItemType = null;
+    if (type === 'vocab') {
+        document.getElementById('add-vocab-fr').value = '';
+        document.getElementById('add-vocab-es').value = '';
+        document.getElementById('add-vocab-topic').value = 'General';
+        document.getElementById('vocab-form-title').textContent = "1. Vocabulario";
+        document.getElementById('vocab-submit-btn').textContent = "+ Guardar Vocabulario";
+        document.getElementById('vocab-cancel-btn').style.display = 'none';
+    } else if (type === 'phonemes') {
+        document.getElementById('add-phoneme-symbol').value = '';
+        document.getElementById('add-phoneme-word').value = '';
+        document.getElementById('add-phoneme-trans').value = '';
+        document.getElementById('add-phoneme-topic').value = 'General';
+        document.getElementById('phoneme-form-title').textContent = "2. Pronunciación de Fonemas y Letras";
+        document.getElementById('phoneme-submit-btn').textContent = "+ Guardar Fonema";
+        document.getElementById('phoneme-cancel-btn').style.display = 'none';
+    } else if (type === 'grammar') {
+        document.getElementById('add-gram-verb').value = '';
+        document.getElementById('add-gram-tense').value = '';
+        document.getElementById('add-gram-topic').value = 'General';
+        ['je', 'tu', 'il', 'nous', 'vous', 'ils'].forEach(k => document.getElementById(`add-gram-${k}`).value = '');
+        document.getElementById('grammar-form-title').textContent = "3. Tabla Gramatical (Conjugaciones)";
+        document.getElementById('grammar-submit-btn').textContent = "+ Guardar Tabla Gramatical";
+        document.getElementById('grammar-cancel-btn').style.display = 'none';
+    } else if (type === 'fill') {
+        document.getElementById('add-fill-title').value = '';
+        document.getElementById('add-fill-sentence').value = '';
+        document.getElementById('add-fill-answer').value = '';
+        document.getElementById('add-fill-topic').value = 'General';
+        document.getElementById('fill-form-title').textContent = "4. Completar Oración";
+        document.getElementById('fill-submit-btn').textContent = "+ Guardar Oración";
+        document.getElementById('fill-cancel-btn').style.display = 'none';
+    } else if (type === 'order') {
+        document.getElementById('add-order-title').value = '';
+        document.getElementById('add-order-sentence').value = '';
+        document.getElementById('add-order-extras').value = '';
+        document.getElementById('add-order-topic').value = 'General';
+        document.getElementById('order-form-title').textContent = "5. Reordenar Oración";
+        document.getElementById('order-submit-btn').textContent = "+ Guardar Reordenar";
+        document.getElementById('order-cancel-btn').style.display = 'none';
+    }
+}
+
 function addVocabItem() {
     const fr = document.getElementById('add-vocab-fr').value.trim();
     const es = document.getElementById('add-vocab-es').value.trim();
+    const topic = document.getElementById('add-vocab-topic').value.trim() || 'General';
     const imgType = document.querySelector('input[name="vocab-img-type"]:checked').value;
 
     if (!fr || !es) return showToast("Completa los campos de Francés y Español.");
 
-    const newItem = { id: 'v_' + Date.now(), fr, es, score: 0 };
+    if (editingItemId && editingItemType === 'vocab') {
+        const item = db.vocab.find(i => i.id === editingItemId);
+        if (item) {
+            item.fr = fr;
+            item.es = es;
+            item.topic = topic;
+            if (imgType === 'emoji') item.img = document.getElementById('add-vocab-emoji').value.trim() || '📘';
+            else if (imgType === 'svg') item.svgCode = document.getElementById('add-vocab-svg').value.trim();
+        }
+        cancelEdit('vocab');
+        saveDB();
+        showToast("Vocabulario actualizado.");
+        return;
+    }
+
+    const newItem = { id: 'v_' + Date.now(), fr, es, topic, score: 0 };
+    const finalizeSave = () => {
+        db.vocab.push(newItem);
+        saveDB();
+        resetVocabForm();
+    };
 
     if (imgType === 'emoji') {
         newItem.img = document.getElementById('add-vocab-emoji').value.trim() || '📘';
-        db.vocab.push(newItem);
-        saveDB();
-        resetVocabForm();
+        finalizeSave();
     } else if (imgType === 'svg') {
         newItem.svgCode = document.getElementById('add-vocab-svg').value.trim();
-        db.vocab.push(newItem);
-        saveDB();
-        resetVocabForm();
+        finalizeSave();
     } else if (imgType === 'file') {
         const fileInput = document.getElementById('add-vocab-file');
         if (fileInput.files && fileInput.files[0]) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 newItem.imgDataUrl = e.target.result;
-                db.vocab.push(newItem);
-                saveDB();
-                resetVocabForm();
+                finalizeSave();
             };
             reader.readAsDataURL(fileInput.files[0]);
         } else {
             newItem.img = '📘';
-            db.vocab.push(newItem);
-            saveDB();
-            resetVocabForm();
+            finalizeSave();
         }
     }
 }
@@ -849,6 +1124,7 @@ function addVocabItem() {
 function resetVocabForm() {
     document.getElementById('add-vocab-fr').value = '';
     document.getElementById('add-vocab-es').value = '';
+    document.getElementById('add-vocab-topic').value = 'General';
     document.getElementById('add-vocab-emoji').value = '';
     document.getElementById('add-vocab-svg').value = '';
     document.getElementById('add-vocab-file').value = '';
@@ -859,21 +1135,34 @@ function addPhonemeItem() {
     const symbol = document.getElementById('add-phoneme-symbol').value.trim();
     const word = document.getElementById('add-phoneme-word').value.trim();
     const trans = document.getElementById('add-phoneme-trans').value.trim();
+    const topic = document.getElementById('add-phoneme-topic').value.trim() || 'General';
     const imgType = document.querySelector('input[name="phoneme-img-type"]:checked').value;
 
     if (!symbol || !word) return showToast("Ingresa el fonema y la palabra de ejemplo.");
 
-    const newItem = { id: 'p_' + Date.now(), symbol, word, trans, score: 0 };
+    if (editingItemId && editingItemType === 'phonemes') {
+        const item = db.phonemes.find(i => i.id === editingItemId);
+        if (item) {
+            item.symbol = symbol;
+            item.word = word;
+            item.trans = trans;
+            item.topic = topic;
+            if (imgType === 'emoji') item.img = document.getElementById('add-phoneme-emoji').value.trim() || '🗣️';
+        }
+        cancelEdit('phonemes');
+        saveDB();
+        showToast("Fonema actualizado.");
+        return;
+    }
 
+    const newItem = { id: 'p_' + Date.now(), symbol, word, trans, topic, score: 0 };
     const saveAndReset = () => {
         db.phonemes.push(newItem);
         saveDB();
         document.getElementById('add-phoneme-symbol').value = '';
         document.getElementById('add-phoneme-word').value = '';
         document.getElementById('add-phoneme-trans').value = '';
-        document.getElementById('add-phoneme-emoji').value = '';
-        document.getElementById('add-phoneme-file').value = '';
-        document.getElementById('add-phoneme-svg').value = '';
+        document.getElementById('add-phoneme-topic').value = 'General';
         showToast("Fonema guardado.");
     };
 
@@ -902,6 +1191,7 @@ function addPhonemeItem() {
 function addGrammarItem() {
     const verb = document.getElementById('add-gram-verb').value.trim();
     const tense = document.getElementById('add-gram-tense').value.trim() || "Présent";
+    const topic = document.getElementById('add-gram-topic').value.trim() || 'General';
     const je = document.getElementById('add-gram-je').value.trim();
     const tu = document.getElementById('add-gram-tu').value.trim();
     const il = document.getElementById('add-gram-il').value.trim();
@@ -911,18 +1201,27 @@ function addGrammarItem() {
 
     if (!verb || !je || !tu || !il || !nous || !vous || !ils) return showToast("Completa todas las conjugaciones.");
 
+    if (editingItemId && editingItemType === 'grammar') {
+        const item = db.grammar.find(i => i.id === editingItemId);
+        if (item) {
+            item.verb = verb;
+            item.tense = tense;
+            item.topic = topic;
+            item.conjugations = { je, tu, il, nous, vous, ils };
+        }
+        cancelEdit('grammar');
+        saveDB();
+        showToast("Tabla de gramática actualizada.");
+        return;
+    }
+
     db.grammar.push({
-        id: 'g_' + Date.now(), verb, tense, score: 0,
+        id: 'g_' + Date.now(), verb, tense, topic, score: 0,
         conjugations: { je, tu, il, nous, vous, ils }
     });
 
     document.getElementById('add-gram-verb').value = '';
-    document.getElementById('add-gram-je').value = '';
-    document.getElementById('add-gram-tu').value = '';
-    document.getElementById('add-gram-il').value = '';
-    document.getElementById('add-gram-nous').value = '';
-    document.getElementById('add-gram-vous').value = '';
-    document.getElementById('add-gram-ils').value = '';
+    ['je', 'tu', 'il', 'nous', 'vous', 'ils'].forEach(k => document.getElementById(`add-gram-${k}`).value = '');
     saveDB();
     showToast("Tabla de gramática guardada.");
 }
@@ -931,21 +1230,33 @@ function addFillItem() {
     const title = document.getElementById('add-fill-title').value.trim();
     const sentence = document.getElementById('add-fill-sentence').value.trim();
     const answer = document.getElementById('add-fill-answer').value.trim();
+    const topic = document.getElementById('add-fill-topic').value.trim() || 'General';
     const imgType = document.querySelector('input[name="fill-img-type"]:checked').value;
 
     if (!sentence.includes('___') || !answer) return showToast("La oración debe contener '___' y la respuesta.");
 
-    const newItem = { id: 'f_' + Date.now(), title: title || 'Completa la frase', sentence, answer, score: 0 };
+    if (editingItemId && editingItemType === 'fill') {
+        const item = db.fill.find(i => i.id === editingItemId);
+        if (item) {
+            item.title = title || 'Completa la frase';
+            item.sentence = sentence;
+            item.answer = answer;
+            item.topic = topic;
+            if (imgType === 'emoji') item.img = document.getElementById('add-fill-emoji').value.trim() || '✏️';
+        }
+        cancelEdit('fill');
+        saveDB();
+        showToast("Oración actualizada.");
+        return;
+    }
 
+    const newItem = { id: 'f_' + Date.now(), title: title || 'Completa la frase', sentence, answer, topic, score: 0 };
     const saveAndReset = () => {
         db.fill.push(newItem);
         saveDB();
         document.getElementById('add-fill-title').value = '';
         document.getElementById('add-fill-sentence').value = '';
         document.getElementById('add-fill-answer').value = '';
-        document.getElementById('add-fill-emoji').value = '';
-        document.getElementById('add-fill-svg').value = '';
-        document.getElementById('add-fill-file').value = '';
         showToast("Oración guardada.");
     };
 
@@ -975,22 +1286,35 @@ function addOrderItem() {
     const title = document.getElementById('add-order-title').value.trim();
     const sentence = document.getElementById('add-order-sentence').value.trim();
     const extrasRaw = document.getElementById('add-order-extras').value.trim();
+    const topic = document.getElementById('add-order-topic').value.trim() || 'General';
     const imgType = document.querySelector('input[name="order-img-type"]:checked').value;
 
     if (!title || !sentence) return showToast("Completa el título y la oración.");
 
     const extras = extrasRaw ? extrasRaw.split(',').map(s => s.trim()) : [];
-    const newItem = { id: 'o_' + Date.now(), title, sentence, extras, score: 0 };
 
+    if (editingItemId && editingItemType === 'order') {
+        const item = db.order.find(i => i.id === editingItemId);
+        if (item) {
+            item.title = title;
+            item.sentence = sentence;
+            item.extras = extras;
+            item.topic = topic;
+            if (imgType === 'emoji') item.img = document.getElementById('add-order-emoji').value.trim();
+        }
+        cancelEdit('order');
+        saveDB();
+        showToast("Reordenar actualizado.");
+        return;
+    }
+
+    const newItem = { id: 'o_' + Date.now(), title, sentence, extras, topic, score: 0 };
     const saveAndReset = () => {
         db.order.push(newItem);
         saveDB();
         document.getElementById('add-order-title').value = '';
         document.getElementById('add-order-sentence').value = '';
         document.getElementById('add-order-extras').value = '';
-        document.getElementById('add-order-emoji').value = '';
-        document.getElementById('add-order-file').value = '';
-        document.getElementById('add-order-svg').value = '';
         showToast("Ejercicio de reordenar guardado.");
     };
 
@@ -1023,26 +1347,27 @@ function deleteItem(type, index) {
 
 function renderCreatorLists() {
     document.getElementById('list-vocab').innerHTML = db.vocab.map((item, idx) => `
-        <span class="item-chip">${item.img || '🖼️'} <strong>${item.fr}</strong> (${item.es}) <span class="chip-score">⭐ ${item.score || 0}/5</span> <span class="remove-chip" onclick="deleteItem('vocab', ${idx})">✕</span></span>
+        <span class="item-chip">${item.img || '🖼️'} <strong>${item.fr}</strong> (${item.es}) <span style="font-size:0.75rem; color:#888;">[${item.topic || 'General'}]</span> <span class="chip-score">⭐ ${item.score || 0}/5</span> <button class="nav-btn" style="padding:1px 6px; font-size:0.7rem; margin-left:4px;" onclick="editItem('vocab', ${idx})">✏️</button><span class="remove-chip" onclick="deleteItem('vocab', ${idx})">✕</span></span>
     `).join('');
 
     document.getElementById('list-phonemes').innerHTML = db.phonemes.map((item, idx) => `
-        <span class="item-chip">🗣️ <strong>[${item.symbol}]</strong> ${item.word} <span class="chip-score">⭐ ${item.score || 0}/5</span> <span class="remove-chip" onclick="deleteItem('phonemes', ${idx})">✕</span></span>
+        <span class="item-chip">🗣️ <strong>[${item.symbol}]</strong> ${item.word} <span style="font-size:0.75rem; color:#888;">[${item.topic || 'General'}]</span> <span class="chip-score">⭐ ${item.score || 0}/5</span> <button class="nav-btn" style="padding:1px 6px; font-size:0.7rem; margin-left:4px;" onclick="editItem('phonemes', ${idx})">✏️</button><span class="remove-chip" onclick="deleteItem('phonemes', ${idx})">✕</span></span>
     `).join('');
 
     document.getElementById('list-grammar').innerHTML = db.grammar.map((item, idx) => `
-        <span class="item-chip">📗 Verbo: <strong>${item.verb}</strong> <span class="chip-score">⭐ ${item.score || 0}/5</span> <span class="remove-chip" onclick="deleteItem('grammar', ${idx})">✕</span></span>
+        <span class="item-chip">📗 Verbo: <strong>${item.verb}</strong> <span style="font-size:0.75rem; color:#888;">[${item.topic || 'General'}]</span> <span class="chip-score">⭐ ${item.score || 0}/5</span> <button class="nav-btn" style="padding:1px 6px; font-size:0.7rem; margin-left:4px;" onclick="editItem('grammar', ${idx})">✏️</button><span class="remove-chip" onclick="deleteItem('grammar', ${idx})">✕</span></span>
     `).join('');
 
     document.getElementById('list-fill').innerHTML = db.fill.map((item, idx) => `
-        <span class="item-chip">✏️ <strong>${item.sentence}</strong> <span class="chip-score">⭐ ${item.score || 0}/5</span> <span class="remove-chip" onclick="deleteItem('fill', ${idx})">✕</span></span>
+        <span class="item-chip">✏️ <strong>${item.sentence}</strong> <span style="font-size:0.75rem; color:#888;">[${item.topic || 'General'}]</span> <span class="chip-score">⭐ ${item.score || 0}/5</span> <button class="nav-btn" style="padding:1px 6px; font-size:0.7rem; margin-left:4px;" onclick="editItem('fill', ${idx})">✏️</button><span class="remove-chip" onclick="deleteItem('fill', ${idx})">✕</span></span>
     `).join('');
 
     document.getElementById('list-order').innerHTML = db.order.map((item, idx) => `
-        <span class="item-chip">🧩 <strong>${item.sentence}</strong> <span class="chip-score">⭐ ${item.score || 0}/5</span> <span class="remove-chip" onclick="deleteItem('order', ${idx})">✕</span></span>
+        <span class="item-chip">🧩 <strong>${item.sentence}</strong> <span style="font-size:0.75rem; color:#888;">[${item.topic || 'General'}]</span> <span class="chip-score">⭐ ${item.score || 0}/5</span> <button class="nav-btn" style="padding:1px 6px; font-size:0.7rem; margin-left:4px;" onclick="editItem('order', ${idx})">✏️</button><span class="remove-chip" onclick="deleteItem('order', ${idx})">✕</span></span>
     `).join('');
 }
 
-// --- 7. Inicialización de la Aplicación ---
+// --- 8. Inicialización de la Aplicación ---
 updateHeaderStats();
+populateTopicDropdown();
 startNewSession();

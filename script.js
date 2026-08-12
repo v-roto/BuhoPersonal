@@ -150,9 +150,8 @@ function saveDB() {
 }
 
 function updateHeaderStats() {
-    document.getElementById('stat-sessions').textContent = sessionCount;
-    const remainingForDecay = 10 - (sessionCount % 10);
-    document.getElementById('stat-decay').textContent = `${remainingForDecay}/10`;
+    const statSessionsEl = document.getElementById('stat-sessions');
+    if (statSessionsEl) statSessionsEl.textContent = sessionCount;
 }
 
 let sessionQueue = [];
@@ -165,7 +164,6 @@ let speechRecognitionInstance = null;
 let browserVoices = [];
 let questionStartTime = 0;
 
-// Editing state
 let editingItemId = null;
 let editingItemType = null;
 
@@ -291,12 +289,12 @@ function getRequiredDays(score) {
     if (score === 3) return 12;
     if (score === 4) return 30;
     if (score === 5) return 90;
-    return 999999; // Platinum (score >= 6)
+    return 999999;
 }
 
 function isItemDue(item) {
     const score = item.score || 0;
-    if (score >= 6) return false; // Platinum
+    if (score >= 6) return false;
     if (score === 0) return true;
     const lastAsked = item.lastAskedDate || 0;
     const daysElapsed = (Date.now() - lastAsked) / (1000 * 60 * 60 * 24);
@@ -348,6 +346,17 @@ function renderMiniIllustrationHTML(item) {
     return `<span style="margin-left:4px; font-size:1.2rem;">${item.img || ''}</span>`;
 }
 
+function getNormalizedFillParts(sentence) {
+    let s = (sentence || "").trim();
+    let endingPunct = "";
+    if (/[.!?]$/.test(s)) {
+        endingPunct = s.slice(-1);
+        s = s.slice(0, -1).trim();
+    }
+    s = s.replace(/[.!?]/g, '').trim();
+    return { parts: s.split('___'), punct: endingPunct };
+}
+
 function startNewSession() {
     let pool = [];
 
@@ -375,10 +384,11 @@ function startNewSession() {
         db.fill.forEach(item => {
             if (matchesTopic(item)) {
                 pool.push({ category: 'fill', type: 'fill', isSpeaking: false, data: item, score: item.score || 0 });
-                const parts = item.sentence.split('___');
+                const norm = getNormalizedFillParts(item.sentence);
                 const answers = item.answer.split(/[,/]/).map(s => s.trim());
                 let fullSentence = "";
-                parts.forEach((p, idx) => fullSentence += p + (answers[idx] || answers[0] || ""));
+                norm.parts.forEach((p, idx) => fullSentence += p + (answers[idx] || answers[0] || ""));
+                fullSentence += norm.punct;
                 pool.push({ category: 'fill', type: 'speaking', isSpeaking: true, targetText: fullSentence.trim(), promptText: `Pronuncia la oración completa: "${item.title}"`, item: item, score: item.score || 0 });
             }
         });
@@ -399,10 +409,9 @@ function startNewSession() {
         });
     }
 
-    // Filter due items (score 0 asked first, then due spaced repetition items)
     let duePool = pool.filter(i => isItemDue(i.data || i.item));
     if (duePool.length === 0) {
-        duePool = pool; // Fallback to all if none due
+        duePool = pool;
     }
 
     duePool.sort((a, b) => {
@@ -453,7 +462,9 @@ function renderExercise(item) {
     const totalInSession = 15;
     const remaining = sessionQueue.length + retryQueue.length + 1;
     const progress = Math.min(100, Math.max(5, ((totalInSession - remaining) / totalInSession) * 100));
-    document.getElementById('progress-bar').style.width = `${progress}%`;
+    
+    const progBar = document.getElementById('progress-bar');
+    if (progBar) progBar.style.width = `${progress}%`;
     const mobileProg = document.getElementById('progress-bar-mobile');
     if (mobileProg) mobileProg.style.width = `${progress}%`;
 
@@ -566,14 +577,17 @@ function renderExercise(item) {
         `;
     }
     else if (item.type === 'fill') {
-        const parts = item.data.sentence.split('___');
+        const norm = getNormalizedFillParts(item.data.sentence);
         let sentenceHTML = "";
-        parts.forEach((p, idx) => {
+        norm.parts.forEach((p, idx) => {
             sentenceHTML += `<span>${p}</span>`;
-            if (idx < parts.length - 1) {
+            if (idx < norm.parts.length - 1) {
                 sentenceHTML += `<input type="text" class="inline-blank-input fill-blank-input" data-idx="${idx}" autocomplete="off">`;
             }
         });
+        if (norm.punct) {
+            sentenceHTML += `<span>${norm.punct}</span>`;
+        }
 
         container.innerHTML = `
             ${wrapTitleWithBadge(item.data.title)}
@@ -701,6 +715,9 @@ function renderSelectedWords() {
 }
 
 function handleDrawerAction() {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+    }
     if (!isChecked) {
         checkAnswer();
     } else {
@@ -790,12 +807,12 @@ function checkAnswer() {
         isCorrect = allCorrect;
         correctSolutionText = currentItem.data.answer;
 
-        const parts = currentItem.data.sentence.split('___');
+        const norm = getNormalizedFillParts(currentItem.data.sentence);
         let spokenSentence = "";
-        parts.forEach((p, idx) => {
+        norm.parts.forEach((p, idx) => {
             spokenSentence += p + (fillInputs[idx] && fillInputs[idx].value ? fillInputs[idx].value : (currentItem.data.answer.split(/[,/]/)[0] || ''));
         });
-        textToSpeak = spokenSentence.trim();
+        textToSpeak = (spokenSentence + norm.punct).trim();
     } else if (currentItem.type === 'order') {
         const userSentence = selectedWords.map(sw => sw.word).join(' ').trim();
         isCorrect = (cleanStr(userSentence) === cleanStr(currentItem.data.sentence));
@@ -803,32 +820,31 @@ function checkAnswer() {
         textToSpeak = currentItem.data.sentence;
     }
 
-    // Spaced repetition score updating
+    // Spaced repetition score updating with pronunciation thresholds (< 20s fast, 20s-30s same, > 30s slow)
     const targetData = currentItem.data || currentItem.item;
     if (targetData) {
         targetData.lastAskedDate = Date.now();
         const currentScore = targetData.score || 0;
         if (!isCorrect) {
-            targetData.score = 1; // Incorrect resets to 1
+            targetData.score = 1;
             retryQueue.push(currentItem);
         } else {
             const isGrammar = (currentItem.type === 'grammar');
-            const fastLimit = isGrammar ? 35 : 10;
-            const slowLimit = isGrammar ? 50 : 15;
+            const isPronunciation = (currentItem.type === 'speaking' || currentItem.type === 'phoneme_speak');
+            const fastLimit = isGrammar ? 35 : (isPronunciation ? 20 : 10);
+            const slowLimit = isGrammar ? 50 : (isPronunciation ? 30 : 15);
 
             if (currentScore === 0) {
-                targetData.score = 1; // 0 moves to 1 when correctly answered
+                targetData.score = 1;
             } else if (elapsedSec < fastLimit) {
                 targetData.score = Math.min(5, currentScore + 1);
             } else if (elapsedSec > slowLimit) {
                 targetData.score = Math.max(1, currentScore - 1);
             }
-            // Interval stays same
         }
     }
     saveDB();
 
-    // Play TTS first, then right/wrong sound after TTS completes, blocking progress until TTS completes
     speakFrenchThenSound(textToSpeak || correctSolutionText, isCorrect ? 'correct' : 'incorrect', () => {
         const drawer = document.getElementById('bottom-drawer');
         const feedbackContent = document.getElementById('feedback-content');
@@ -878,7 +894,8 @@ function finishSession() {
 
     document.getElementById('bottom-drawer').style.display = 'none';
     const container = document.getElementById('exercise-container');
-    document.getElementById('progress-bar').style.width = '100%';
+    const progBar = document.getElementById('progress-bar');
+    if (progBar) progBar.style.width = '100%';
     const mobileProg = document.getElementById('progress-bar-mobile');
     if (mobileProg) mobileProg.style.width = '100%';
 
@@ -963,7 +980,6 @@ function toggleImgTypeInputs(prefix, selectedType) {
     document.getElementById(`${prefix}-input-svg`).style.display = selectedType === 'svg' ? 'block' : 'none';
 }
 
-// EDIT ITEM FUNCTIONS
 function editItem(type, index) {
     const item = db[type][index];
     if (!item) return;

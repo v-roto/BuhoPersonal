@@ -688,17 +688,21 @@ main {
 .summary-icon { font-size: 4rem; margin-bottom: 15px; }
 
 /* Mobile Responsiveness & Fit Adjustments */
+.mobile-progress-bar-outer {
+    display: none;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 6px 20px;
+    background: white;
+    border-bottom: 2px solid var(--duo-gray-border);
+}
+
 @media (max-width: 600px) {
-    header {
-        padding: 8px 12px;
-        flex-direction: column;
-        align-items: stretch;
+    .mobile-progress-bar-outer {
+        display: block;
     }
     .desktop-progress {
         display: none;
-    }
-    .mobile-progress {
-        display: block;
     }
     main {
         padding: 15px 10px 100px 10px;

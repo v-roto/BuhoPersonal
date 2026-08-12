@@ -167,7 +167,7 @@ let questionStartTime = 0;
 let editingItemId = null;
 let editingItemType = null;
 
-// --- 4. Sistema de Voz Nativa y TTS secuencial ---
+// --- 4. Sistema de Voz Nativa ---
 function populateBrowserVoices() {
     if ('speechSynthesis' in window) {
         let allVoices = window.speechSynthesis.getVoices();
@@ -218,52 +218,6 @@ function speakFrench(text) {
             }
         }
         window.speechSynthesis.speak(utterance);
-    }
-}
-
-function speakFrenchThenSound(text, soundType, onComplete) {
-    const actionBtn = document.getElementById('drawer-action-btn');
-    if (actionBtn) {
-        actionBtn.disabled = true;
-        actionBtn.style.opacity = '0.5';
-    }
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'fr-FR';
-        utterance.rate = 1.2;
-        const selectedVoiceName = localStorage.getItem('duo_french_browser_voice');
-        if (selectedVoiceName && browserVoices.length > 0) {
-            const found = browserVoices.find(v => v.name === selectedVoiceName);
-            if (found) {
-                utterance.voice = found;
-                utterance.lang = found.lang;
-            }
-        }
-        utterance.onend = function() {
-            playSound(soundType);
-            if (actionBtn) {
-                actionBtn.disabled = false;
-                actionBtn.style.opacity = '1';
-            }
-            if (onComplete) onComplete();
-        };
-        utterance.onerror = function() {
-            playSound(soundType);
-            if (actionBtn) {
-                actionBtn.disabled = false;
-                actionBtn.style.opacity = '1';
-            }
-            if (onComplete) onComplete();
-        };
-        window.speechSynthesis.speak(utterance);
-    } else {
-        playSound(soundType);
-        if (actionBtn) {
-            actionBtn.disabled = false;
-            actionBtn.style.opacity = '1';
-        }
-        if (onComplete) onComplete();
     }
 }
 
@@ -368,8 +322,8 @@ function startNewSession() {
     if(db.vocab) {
         db.vocab.forEach(item => {
             if (matchesTopic(item)) {
+                // No pronunciation exercise for vocab as requested
                 pool.push({ category: 'vocab', type: 'vocab_type', isSpeaking: false, data: item, score: item.score || 0 });
-                pool.push({ category: 'vocab', type: 'speaking', isSpeaking: true, targetText: item.fr, promptText: `Pronuncia la palabra`, item: item, score: item.score || 0 });
             }
         });
     }
@@ -387,7 +341,12 @@ function startNewSession() {
                 const norm = getNormalizedFillParts(item.sentence);
                 const answers = item.answer.split(/[,/]/).map(s => s.trim());
                 let fullSentence = "";
-                norm.parts.forEach((p, idx) => fullSentence += p + (answers[idx] || answers[0] || ""));
+                norm.parts.forEach((p, idx) => {
+                    fullSentence += p;
+                    if (idx < answers.length && idx < norm.parts.length - 1) {
+                        fullSentence += (answers[idx] || answers[0]);
+                    }
+                });
                 fullSentence += norm.punct;
                 pool.push({ category: 'fill', type: 'speaking', isSpeaking: true, targetText: fullSentence.trim(), promptText: `Pronuncia la oración completa: "${item.title}"`, item: item, score: item.score || 0 });
             }
@@ -422,7 +381,14 @@ function startNewSession() {
         return scoreA - scoreB;
     });
 
-    sessionQueue = duePool.slice(0, 15);
+    let nonSpeakingPool = duePool.filter(i => !i.isSpeaking);
+    let speakingPool = duePool.filter(i => i.isSpeaking);
+
+    let selectedNonSpeaking = nonSpeakingPool.slice(0, 10);
+    let selectedSpeaking = speakingPool.slice(0, 5);
+
+    // Put all pronunciation exercises at the end
+    sessionQueue = [...selectedNonSpeaking, ...selectedSpeaking];
     retryQueue = [];
     isRetryMode = false;
 
@@ -459,9 +425,8 @@ function renderExercise(item) {
     selectedWords = [];
     questionStartTime = Date.now();
 
-    const totalInSession = 15;
-    const remaining = sessionQueue.length + retryQueue.length + 1;
-    const progress = Math.min(100, Math.max(5, ((totalInSession - remaining) / totalInSession) * 100));
+    const totalInSession = sessionQueue.length + retryQueue.length + 1;
+    const progress = Math.min(100, Math.max(5, ((20 - totalInSession) / 20) * 100));
     
     const progBar = document.getElementById('progress-bar');
     if (progBar) progBar.style.width = `${progress}%`;
@@ -810,7 +775,12 @@ function checkAnswer() {
         const norm = getNormalizedFillParts(currentItem.data.sentence);
         let spokenSentence = "";
         norm.parts.forEach((p, idx) => {
-            spokenSentence += p + (fillInputs[idx] && fillInputs[idx].value ? fillInputs[idx].value : (currentItem.data.answer.split(/[,/]/)[0] || ''));
+            spokenSentence += p;
+            if (idx < fillInputs.length && fillInputs[idx] && fillInputs[idx].value) {
+                spokenSentence += fillInputs[idx].value;
+            } else if (idx < answers.length) {
+                spokenSentence += (currentItem.data.answer.split(/[,/]/)[idx] || currentItem.data.answer.split(/[,/]/)[0] || '');
+            }
         });
         textToSpeak = (spokenSentence + norm.punct).trim();
     } else if (currentItem.type === 'order') {
@@ -820,7 +790,7 @@ function checkAnswer() {
         textToSpeak = currentItem.data.sentence;
     }
 
-    // Spaced repetition score updating with pronunciation thresholds (< 20s fast, 20s-30s same, > 30s slow)
+    // Spaced repetition score updating
     const targetData = currentItem.data || currentItem.item;
     if (targetData) {
         targetData.lastAskedDate = Date.now();
@@ -845,34 +815,38 @@ function checkAnswer() {
     }
     saveDB();
 
-    speakFrenchThenSound(textToSpeak || correctSolutionText, isCorrect ? 'correct' : 'incorrect', () => {
-        const drawer = document.getElementById('bottom-drawer');
-        const feedbackContent = document.getElementById('feedback-content');
-        const icon = document.getElementById('feedback-icon');
-        const title = document.getElementById('feedback-title');
-        const subtext = document.getElementById('feedback-subtext');
-        const actionBtn = document.getElementById('drawer-action-btn');
+    // Only start TTS if the answer is correct; if incorrect, continue without TTS
+    if (isCorrect && textToSpeak) {
+        speakFrench(textToSpeak);
+    }
+    playSound(isCorrect ? 'correct' : 'incorrect');
 
-        feedbackContent.style.visibility = 'visible';
+    const drawer = document.getElementById('bottom-drawer');
+    const feedbackContent = document.getElementById('feedback-content');
+    const icon = document.getElementById('feedback-icon');
+    const title = document.getElementById('feedback-title');
+    const subtext = document.getElementById('feedback-subtext');
+    const actionBtn = document.getElementById('drawer-action-btn');
 
-        if (isCorrect) {
-            drawer.className = 'bottom-drawer correct';
-            icon.textContent = '✓';
-            title.textContent = '¡Excelente!';
-            subtext.textContent = `Solución: ${correctSolutionText}`;
-            actionBtn.textContent = 'CONTINUAR';
-            actionBtn.className = 'check-btn';
-        } else {
-            drawer.className = 'bottom-drawer incorrect';
-            icon.textContent = '✕';
-            title.textContent = 'Incorrecto. Lo repasaremos al final:';
-            subtext.textContent = correctSolutionText;
-            actionBtn.textContent = 'ENTENDIDO';
-            actionBtn.className = 'check-btn btn-incorrect';
-        }
+    feedbackContent.style.visibility = 'visible';
 
-        isChecked = true;
-    });
+    if (isCorrect) {
+        drawer.className = 'bottom-drawer correct';
+        icon.textContent = '✓';
+        title.textContent = '¡Excelente!';
+        subtext.textContent = `Solución: ${correctSolutionText}`;
+        actionBtn.textContent = 'CONTINUAR';
+        actionBtn.className = 'check-btn';
+    } else {
+        drawer.className = 'bottom-drawer incorrect';
+        icon.textContent = '✕';
+        title.textContent = 'Incorrecto. Lo repasaremos al final:';
+        subtext.textContent = correctSolutionText;
+        actionBtn.textContent = 'ENTENDIDO';
+        actionBtn.className = 'check-btn btn-incorrect';
+    }
+
+    isChecked = true;
 }
 
 function finishSession() {

@@ -147,6 +147,9 @@ function saveDB() {
     updateHeaderStats();
     renderCreatorLists();
     populateTopicDropdown();
+    if (localFileHandle) {
+        saveToLocalFile();
+    }
 }
 
 function updateHeaderStats() {
@@ -1357,7 +1360,61 @@ function renderCreatorLists() {
     `).join('');
 }
 
-// --- 8. Inicialización de la Aplicación ---
+// --- 8. Almacenamiento Local de Archivo (File System Access API) ---
+let localFileHandle = null;
+
+async function connectLocalFile() {
+    if (!window.showSaveFilePicker) {
+        showToast("❌ Tu navegador no soporta el acceso directo al sistema de archivos.");
+        return;
+    }
+    try {
+        const options = {
+            suggestedName: 'duo_french_db_backup.json',
+            types: [{
+                description: 'JSON Files',
+                accept: { 'application/json': ['.json'] }
+            }]
+        };
+        localFileHandle = await window.showSaveFilePicker(options);
+        showToast("📁 Archivo local conectado correctamente.");
+        updateLocalFileStatusUI(true);
+        await saveToLocalFile();
+    } catch (err) {
+        if (err.name !== 'AbortError') {
+            showToast("❌ Error al conectar archivo local.");
+            console.error(err);
+        }
+    }
+}
+
+async function saveToLocalFile() {
+    if (!localFileHandle) return;
+    try {
+        const writable = await localFileHandle.createWritable();
+        const payload = JSON.stringify({ db, sessionCount }, null, 2);
+        await writable.write(payload);
+        await writable.close();
+        showToast("💾 Guardado automáticamente en archivo local.");
+    } catch (err) {
+        console.error("Error writing to local file:", err);
+        showToast("⚠️ Advertencia: No se pudo escribir en el archivo local.");
+        updateLocalFileStatusUI(false);
+        localFileHandle = null;
+    }
+}
+
+function updateLocalFileStatusUI(isConnected) {
+    const statusEl = document.getElementById('local-file-status');
+    if (!statusEl) return;
+    if (isConnected) {
+        statusEl.innerHTML = `Estado: 🟢 <strong>Conectado y auto-guardando en tiempo real</strong>`;
+    } else {
+        statusEl.innerHTML = `Estado: 🔴 Ningún archivo conectado (usando almacenamiento interno)`;
+    }
+}
+
+// --- 9. Inicialización de la Aplicación ---
 updateHeaderStats();
 populateTopicDropdown();
 startNewSession();

@@ -281,9 +281,10 @@
                 <p style="font-size: 0.9rem; color: var(--duo-text-muted); margin-bottom: 12px;">
                     Conecta un archivo local en tu computadora para que todos tus cambios y estrellas se guarden automáticamente en tiempo real sin necesidad de exportar manualmente.
                 </p>
-                <div style="margin-bottom: 12px;">
-                    <button class="action-btn" style="background: #0284c7; border-color: #0369a1;" onclick="connectLocalFile()">📁 Conectar Archivo Local de Auto-guardado</button>
-                    <p id="local-file-status" style="font-size: 0.85rem; color: var(--duo-text-muted); margin-top: 6px;">Estado: 🔴 Ningún archivo conectado (usando almacenamiento interno)</p>
+                <div style="margin-bottom: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <button class="action-btn" style="background: #0284c7; border-color: #0369a1;" onclick="connectLocalFile()">📁 Conectar Archivo Local</button>
+                    <button class="action-btn" id="reconnect-local-btn" style="background: #ca8a04; border-color: #a16207; display: none;" onclick="reconnectLocalFile()">🔄 Reconectar Archivo</button>
+                    <p id="local-file-status" style="font-size: 0.85rem; color: var(--duo-text-muted); margin-top: 6px; width: 100%;">Estado: 🔴 Ningún archivo conectado (usando almacenamiento interno)</p>
                 </div>
                 <div class="form-grid-2">
                     <button class="action-btn" style="background: var(--duo-blue); border-color: var(--duo-blue-dark);" onclick="exportDataJSON()">📥 Exportar Respaldo (.json)</button>

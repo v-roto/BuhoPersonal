@@ -1360,8 +1360,86 @@ function renderCreatorLists() {
     `).join('');
 }
 
-// --- 8. Almacenamiento Local de Archivo (File System Access API) ---
+// --- 8. Almacenamiento Local de Archivo (File System Access API + IndexedDB) ---
 let localFileHandle = null;
+
+const DB_NAME = 'buho_local_file_db';
+const STORE_NAME = 'handles';
+const HANDLE_KEY = 'auto_save_handle';
+
+function openIDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+            }
+        };
+    });
+}
+
+async function saveHandleToIDB(handle) {
+    try {
+        const db = await openIDB();
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).put(handle, HANDLE_KEY);
+        return new Promise((resolve, reject) => {
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    } catch (e) {
+        console.warn("Could not save handle to IDB:", e);
+    }
+}
+
+async function getHandleFromIDB() {
+    try {
+        const db = await openIDB();
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const request = tx.objectStore(STORE_NAME).get(HANDLE_KEY);
+        return new Promise((resolve, reject) => {
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    } catch (e) {
+        console.warn("Could not get handle from IDB:", e);
+        return null;
+    }
+}
+
+async function clearHandleFromIDB() {
+    try {
+        const db = await openIDB();
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).delete(HANDLE_KEY);
+    } catch (e) {
+        console.warn("Could not clear handle from IDB:", e);
+    }
+}
+
+async function initLocalFileHandle() {
+    if (!window.showSaveFilePicker) return;
+    const handle = await getHandleFromIDB();
+    if (handle) {
+        localFileHandle = handle;
+        try {
+            const options = { mode: 'readwrite' };
+            const permission = await localFileHandle.queryPermission(options);
+            if (permission === 'granted') {
+                updateLocalFileStatusUI(true, handle.name);
+                await saveToLocalFile();
+            } else {
+                updateLocalFileStatusUI('needs_permission', handle.name);
+            }
+        } catch (e) {
+            console.error("Error checking handle permission:", e);
+            updateLocalFileStatusUI(false);
+        }
+    }
+}
 
 async function connectLocalFile() {
     if (!window.showSaveFilePicker) {
@@ -1377,14 +1455,37 @@ async function connectLocalFile() {
             }]
         };
         localFileHandle = await window.showSaveFilePicker(options);
+        await saveHandleToIDB(localFileHandle);
         showToast("📁 Archivo local conectado correctamente.");
-        updateLocalFileStatusUI(true);
+        updateLocalFileStatusUI(true, localFileHandle.name);
         await saveToLocalFile();
     } catch (err) {
         if (err.name !== 'AbortError') {
             showToast("❌ Error al conectar archivo local.");
             console.error(err);
         }
+    }
+}
+
+async function reconnectLocalFile() {
+    if (!localFileHandle) return;
+    try {
+        const options = { mode: 'readwrite' };
+        const permission = await localFileHandle.requestPermission(options);
+        if (permission === 'granted') {
+            showToast("📁 Archivo local reconectado correctamente.");
+            updateLocalFileStatusUI(true, localFileHandle.name);
+            await saveToLocalFile();
+        } else {
+            showToast("❌ Permiso denegado.");
+            updateLocalFileStatusUI(false);
+        }
+    } catch (err) {
+        console.error("Error requesting permission:", err);
+        await clearHandleFromIDB();
+        localFileHandle = null;
+        updateLocalFileStatusUI(false);
+        showToast("❌ El archivo anterior ya no es accesible. Conecta uno nuevo.");
     }
 }
 
@@ -1398,19 +1499,27 @@ async function saveToLocalFile() {
         showToast("💾 Guardado automáticamente en archivo local.");
     } catch (err) {
         console.error("Error writing to local file:", err);
-        showToast("⚠️ Advertencia: No se pudo escribir en el archivo local.");
-        updateLocalFileStatusUI(false);
+        showToast("⚠️ Advertencia: No se pudo escribir en el archivo local. Haz clic en reconectar.");
+        await clearHandleFromIDB();
+        updateLocalFileStatusUI('needs_permission', localFileHandle.name);
         localFileHandle = null;
     }
 }
 
-function updateLocalFileStatusUI(isConnected) {
+function updateLocalFileStatusUI(status, fileName = '') {
     const statusEl = document.getElementById('local-file-status');
+    const reconnectBtn = document.getElementById('reconnect-local-btn');
     if (!statusEl) return;
-    if (isConnected) {
-        statusEl.innerHTML = `Estado: 🟢 <strong>Conectado y auto-guardando en tiempo real</strong>`;
+
+    if (status === true) {
+        statusEl.innerHTML = `Estado: 🟢 <strong>Conectado y auto-guardando en tiempo real (${fileName || 'archivo'})</strong>`;
+        if (reconnectBtn) reconnectBtn.style.display = 'none';
+    } else if (status === 'needs_permission') {
+        statusEl.innerHTML = `Estado: 🟡 <strong>Archivo vinculado previamente ("${fileName || 'archivo'}"). Haz clic en "Reconectar Archivo" para continuar auto-guardando.</strong>`;
+        if (reconnectBtn) reconnectBtn.style.display = 'inline-block';
     } else {
         statusEl.innerHTML = `Estado: 🔴 Ningún archivo conectado (usando almacenamiento interno)`;
+        if (reconnectBtn) reconnectBtn.style.display = 'none';
     }
 }
 
@@ -1418,3 +1527,4 @@ function updateLocalFileStatusUI(isConnected) {
 updateHeaderStats();
 populateTopicDropdown();
 startNewSession();
+initLocalFileHandle();

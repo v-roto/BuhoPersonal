@@ -170,6 +170,66 @@ let questionStartTime = 0;
 let editingItemId = null;
 let editingItemType = null;
 
+let matchSelectedLeft = null;
+let matchSelectedRight = null;
+let matchedPairs = [];
+
+function selectMatchItem(side, index, itemId) {
+    if (matchedPairs.includes(itemId)) return;
+
+    if (side === 'left') {
+        document.querySelectorAll('[id^="match-left-"]').forEach(el => el.style.borderColor = 'var(--duo-gray-border)');
+        matchSelectedLeft = { index, itemId };
+        document.getElementById(`match-left-${index}`).style.borderColor = 'var(--duo-blue)';
+    } else {
+        document.querySelectorAll('[id^="match-right-"]').forEach(el => el.style.borderColor = 'var(--duo-gray-border)');
+        matchSelectedRight = { index, itemId };
+        document.getElementById(`match-right-${index}`).style.borderColor = 'var(--duo-blue)';
+    }
+
+    if (matchSelectedLeft && matchSelectedRight) {
+        if (matchSelectedLeft.itemId === matchSelectedRight.itemId) {
+            matchedPairs.push(matchSelectedLeft.itemId);
+            const leftEl = document.getElementById(`match-left-${matchSelectedLeft.index}`);
+            const rightEl = document.getElementById(`match-right-${matchSelectedRight.index}`);
+            
+            leftEl.style.background = 'var(--duo-green-light)';
+            leftEl.style.borderColor = 'var(--duo-green)';
+            leftEl.style.opacity = '0.6';
+            leftEl.style.pointerEvents = 'none';
+
+            rightEl.style.background = 'var(--duo-green-light)';
+            rightEl.style.borderColor = 'var(--duo-green)';
+            rightEl.style.opacity = '0.6';
+            rightEl.style.pointerEvents = 'none';
+
+            playSound('correct');
+            matchSelectedLeft = null;
+            matchSelectedRight = null;
+        } else {
+            const leftEl = document.getElementById(`match-left-${matchSelectedLeft.index}`);
+            const rightEl = document.getElementById(`match-right-${matchSelectedRight.index}`);
+
+            leftEl.style.borderColor = 'var(--duo-red)';
+            leftEl.style.background = 'var(--duo-red-light)';
+
+            rightEl.style.borderColor = 'var(--duo-red)';
+            rightEl.style.background = 'var(--duo-red-light)';
+            
+            playSound('incorrect');
+
+            setTimeout(() => {
+                leftEl.style.borderColor = 'var(--duo-gray-border)';
+                leftEl.style.background = 'white';
+                rightEl.style.borderColor = 'var(--duo-gray-border)';
+                rightEl.style.background = 'white';
+                matchSelectedLeft = null;
+                matchSelectedRight = null;
+            }, 500);
+        }
+    }
+}
+
 // --- 4. Sistema de Voz Nativa ---
 function populateBrowserVoices() {
     if ('speechSynthesis' in window) {
@@ -238,7 +298,7 @@ function testSelectedVoice() {
     speakFrench("Bonjour! Bienvenue dans vos leçons de français.");
 }
 
-// --- 5. Spaced Repetition Rules (0 to 5 / Platinum) ---
+// --- 5. Spaced Repetition Rules (0 to 5) ---
 function getRequiredDays(score) {
     if (score === 0) return 0;
     if (score === 1) return 1;
@@ -251,7 +311,6 @@ function getRequiredDays(score) {
 
 function isItemDue(item) {
     const score = item.score || 0;
-    if (score >= 6) return false;
     if (score === 0) return true;
     const lastAsked = item.lastAskedDate || 0;
     const daysElapsed = (Date.now() - lastAsked) / (1000 * 60 * 60 * 24);
@@ -323,12 +382,18 @@ function startNewSession() {
     };
 
     if(db.vocab) {
-        db.vocab.forEach(item => {
-            if (matchesTopic(item)) {
-                // No pronunciation exercise for vocab as requested
-                pool.push({ category: 'vocab', type: 'vocab_type', isSpeaking: false, data: item, score: item.score || 0 });
-            }
+        let vocabFiltered = db.vocab.filter(item => matchesTopic(item));
+        vocabFiltered.forEach(item => {
+            pool.push({ category: 'vocab', type: 'vocab_type', isSpeaking: false, data: item, score: item.score || 0 });
         });
+        for (let i = 0; i < vocabFiltered.length; i += 4) {
+            let chunk = vocabFiltered.slice(i, i + 4);
+            if (chunk.length >= 2) {
+                let avgScore = Math.round(chunk.reduce((sum, it) => sum + (it.score || 0), 0) / chunk.length);
+                pool.push({ category: 'vocab', type: 'vocab_match_fr', isSpeaking: false, items: chunk, score: avgScore });
+                pool.push({ category: 'vocab', type: 'vocab_match_audio', isSpeaking: false, items: chunk, score: avgScore });
+            }
+        }
     }
     if(db.grammar) {
         db.grammar.forEach(item => {
@@ -371,12 +436,33 @@ function startNewSession() {
         });
     }
 
-    let duePool = pool.filter(i => isItemDue(i.data || i.item));
+    let duePool = pool.filter(i => isItemDue(i.data || i.item || (i.items ? i.items[0] : null)));
     if (duePool.length === 0) {
         duePool = pool;
     }
 
-    duePool.sort((a, b) => {
+    // Ensure at least 5 different exercise types in each session if available
+    let typesMap = new Map();
+    duePool.forEach(item => {
+        if (!typesMap.has(item.type)) {
+            typesMap.set(item.type, []);
+        }
+        typesMap.get(item.type).push(item);
+    });
+
+    let selected = [];
+    let selectedTypes = new Set();
+
+    for (let [type, items] of typesMap.entries()) {
+        if (selectedTypes.size < 5 && items.length > 0) {
+            let item = items.shift();
+            selected.push(item);
+            selectedTypes.add(type);
+        }
+    }
+
+    let remainingPool = duePool.filter(i => !selected.includes(i));
+    remainingPool.sort((a, b) => {
         const scoreA = a.score || 0;
         const scoreB = b.score || 0;
         if (scoreA === 0 && scoreB !== 0) return -1;
@@ -384,14 +470,41 @@ function startNewSession() {
         return scoreA - scoreB;
     });
 
-    let nonSpeakingPool = duePool.filter(i => !i.isSpeaking);
-    let speakingPool = duePool.filter(i => i.isSpeaking);
+    while (selected.length < 15 && remainingPool.length > 0) {
+        selected.push(remainingPool.shift());
+    }
 
-    let selectedNonSpeaking = nonSpeakingPool.slice(0, 10);
-    let selectedSpeaking = speakingPool.slice(0, 5);
+    // Rule: No more than 2 exercises from the same topic/block consecutively
+    function orderSessionQueue(queue) {
+        let result = [];
+        let remaining = [...queue];
 
-    // Put all pronunciation exercises at the end
-    sessionQueue = [...selectedNonSpeaking, ...selectedSpeaking];
+        const getItemTopic = (item) => {
+            if (item.data && item.data.topic) return item.data.topic;
+            if (item.item && item.item.topic) return item.item.topic;
+            if (item.items && item.items[0] && item.items[0].topic) return item.items[0].topic;
+            return 'General';
+        };
+
+        while (remaining.length > 0) {
+            let last1 = result.length >= 1 ? getItemTopic(result[result.length - 1]) : null;
+            let last2 = result.length >= 2 ? getItemTopic(result[result.length - 2]) : null;
+
+            let validIndex = remaining.findIndex(item => {
+                let t = getItemTopic(item);
+                return !(last1 && last2 && t === last1 && t === last2);
+            });
+
+            if (validIndex === -1) {
+                validIndex = 0;
+            }
+
+            result.push(remaining.splice(validIndex, 1)[0]);
+        }
+        return result;
+    }
+
+    sessionQueue = orderSessionQueue(selected);
     retryQueue = [];
     isRetryMode = false;
 
@@ -426,7 +539,16 @@ function renderExercise(item) {
     actionBtn.style.opacity = '1';
     isChecked = false;
     selectedWords = [];
-    questionStartTime = Date.now();
+    questionStartTime = null;
+
+    const markTimerStarted = () => {
+        if (!questionStartTime) {
+            questionStartTime = Date.now();
+        }
+    };
+
+    container.oninput = markTimerStarted;
+    container.onclick = markTimerStarted;
 
     const totalInSession = sessionQueue.length + retryQueue.length + 1;
     const progress = Math.min(100, Math.max(5, ((20 - totalInSession) / 20) * 100));
@@ -438,7 +560,7 @@ function renderExercise(item) {
 
     const isSpeakingBadge = item.isSpeaking ? 'speaking-badge' : '';
     const scoreVal = item.score || 0;
-    const scoreLabel = scoreVal >= 6 ? '💎 Platinum' : `⭐ Dominio: ${scoreVal}/5`;
+    const scoreLabel = `⭐ Dominio: ${scoreVal}/5`;
     const levelBadgeHTML = `
         <div class="level-pill ${isSpeakingBadge}">
             ${item.isSpeaking ? '🎙️ Micrófono • ' : ''}${scoreLabel} ${isRetryMode ? '• 🔁 Repaso' : ''}
@@ -459,6 +581,36 @@ function renderExercise(item) {
                 <button class="speaker-btn hint-btn" onmousedown="event.preventDefault()" onclick="speakFrench('${item.data.fr.replace(/'/g, "\\'")}')">💡 Escuchar Pista Audio</button>
             </div>
             <input type="text" id="user-input" class="duo-input" placeholder="Escribe en francés..." autocomplete="off">
+        `;
+        setTimeout(() => speakFrench(item.data.fr), 400);
+    } 
+    else if (item.type === 'vocab_match_fr' || item.type === 'vocab_match_audio') {
+        matchSelectedLeft = null;
+        matchSelectedRight = null;
+        matchedPairs = [];
+
+        const isAudioOnly = (item.type === 'vocab_match_audio');
+        const shuffledRight = [...item.items].sort(() => Math.random() - 0.5);
+
+        container.innerHTML = `
+            ${wrapTitleWithBadge(isAudioOnly ? 'Une el audio con su traducción' : 'Une la palabra con su traducción')}
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div style="display: flex; flex-direction: column; gap: 10px;" id="match-left-column">
+                    ${item.items.map((it, idx) => `
+                        <div class="match-tile" id="match-left-${idx}" onclick="selectMatchItem('left', ${idx}, '${it.id}')" style="background: white; border: 2px solid var(--duo-gray-border); border-bottom-width: 4px; border-radius: 12px; padding: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+                            <span>${isAudioOnly ? '🔊 Audio #' + (idx + 1) : it.fr}</span>
+                            <button class="speaker-btn" style="width: 32px; height: 32px; font-size: 1rem;" onmousedown="event.preventDefault()" onclick="event.stopPropagation(); speakFrench('${it.fr.replace(/'/g, "\\'")}')">🔊</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;" id="match-right-column">
+                    ${shuffledRight.map((it, idx) => `
+                        <div class="match-tile" id="match-right-${idx}" onclick="selectMatchItem('right', ${idx}, '${it.id}')" style="background: white; border: 2px solid var(--duo-gray-border); border-bottom-width: 4px; border-radius: 12px; padding: 12px; font-weight: 800; cursor: pointer; text-align: center;">
+                            ${it.es}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
         `;
     } 
     else if (item.type === 'phoneme_speak') {
@@ -492,7 +644,10 @@ function renderExercise(item) {
                     <input type="text" id="user-speech-input" class="duo-input" placeholder="Haz clic en el mic o escribe aquí..." style="border-color: #ce93d8;" autocomplete="off">
                 </div>
 
-                <button class="skip-btn" onclick="skipSpeakingExercise()">⏭️ Saltar este ejercicio</button>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
+                    <button class="skip-btn" onclick="skipSpeakingExercise()">⏭️ Saltar este ejercicio</button>
+                    <button class="skip-btn" style="background: #f3e5f5; border-color: #ce93d8; color: var(--duo-purple-dark);" onclick="skipAllSpeakingExercises()">⏭️ Saltar TODOS de pronunciación</button>
+                </div>
             </div>
         `;
     }
@@ -515,11 +670,15 @@ function renderExercise(item) {
                     <input type="text" id="user-speech-input" class="duo-input" placeholder="Haz clic en el mic o edita la respuesta aquí..." style="border-color: #ce93d8;" autocomplete="off">
                 </div>
 
-                <button class="skip-btn" onclick="skipSpeakingExercise()">⏭️ Saltar este ejercicio</button>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
+                    <button class="skip-btn" onclick="skipSpeakingExercise()">⏭️ Saltar este ejercicio</button>
+                    <button class="skip-btn" style="background: #f3e5f5; border-color: #ce93d8; color: var(--duo-purple-dark);" onclick="skipAllSpeakingExercises()">⏭️ Saltar TODOS de pronunciación</button>
+                </div>
             </div>
         `;
     }
     else if (item.type === 'grammar') {
+        const prefilled = item.prefilled || {};
         container.innerHTML = `
             ${wrapTitleWithBadge('Completa la tabla de conjugación')}
             <div class="instruction-box">
@@ -534,12 +693,12 @@ function renderExercise(item) {
                     <span class="grammar-badge">${item.data.verb}</span>
                 </div>
                 <table class="conjugation-table">
-                    <tr><td class="pronoun-cell">Je / J'</td><td><input type="text" id="gram-je" class="duo-input" placeholder="..." autocomplete="off"></td></tr>
-                    <tr><td class="pronoun-cell">Tu</td><td><input type="text" id="gram-tu" class="duo-input" placeholder="..." autocomplete="off"></td></tr>
-                    <tr><td class="pronoun-cell">Il / Elle / On</td><td><input type="text" id="gram-il" class="duo-input" placeholder="..." autocomplete="off"></td></tr>
-                    <tr><td class="pronoun-cell">Nous</td><td><input type="text" id="gram-nous" class="duo-input" placeholder="..." autocomplete="off"></td></tr>
-                    <tr><td class="pronoun-cell">Vous</td><td><input type="text" id="gram-vous" class="duo-input" placeholder="..." autocomplete="off"></td></tr>
-                    <tr><td class="pronoun-cell">Ils / Elles</td><td><input type="text" id="gram-ils" class="duo-input" placeholder="..." autocomplete="off"></td></tr>
+                    <tr><td class="pronoun-cell">Je / J'</td><td><input type="text" id="gram-je" class="duo-input" value="${prefilled.je || ''}" ${prefilled.je ? 'style="border-color: var(--duo-green); background: var(--duo-green-light);" disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
+                    <tr><td class="pronoun-cell">Tu</td><td><input type="text" id="gram-tu" class="duo-input" value="${prefilled.tu || ''}" ${prefilled.tu ? 'style="border-color: var(--duo-green); background: var(--duo-green-light);" disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
+                    <tr><td class="pronoun-cell">Il / Elle / On</td><td><input type="text" id="gram-il" class="duo-input" value="${prefilled.il || ''}" ${prefilled.il ? 'style="border-color: var(--duo-green); background: var(--duo-green-light);" disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
+                    <tr><td class="pronoun-cell">Nous</td><td><input type="text" id="gram-nous" class="duo-input" value="${prefilled.nous || ''}" ${prefilled.nous ? 'style="border-color: var(--duo-green); background: var(--duo-green-light);" disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
+                    <tr><td class="pronoun-cell">Vous</td><td><input type="text" id="gram-vous" class="duo-input" value="${prefilled.vous || ''}" ${prefilled.vous ? 'style="border-color: var(--duo-green); background: var(--duo-green-light);" disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
+                    <tr><td class="pronoun-cell">Ils / Elles</td><td><input type="text" id="gram-ils" class="duo-input" value="${prefilled.ils || ''}" ${prefilled.ils ? 'style="border-color: var(--duo-green); background: var(--duo-green-light);" disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
                 </table>
             </div>
         `;
@@ -658,6 +817,13 @@ function skipSpeakingExercise() {
     loadNextQuestion();
 }
 
+function skipAllSpeakingExercises() {
+    sessionQueue = sessionQueue.filter(i => !i.isSpeaking);
+    retryQueue = retryQueue.filter(i => !i.isSpeaking);
+    showToast("⏭️ Todos los ejercicios de pronunciación han sido saltados.");
+    loadNextQuestion();
+}
+
 function toggleWord(word, index) {
     const tile = document.getElementById(`tile-${index}`);
     if (tile.classList.contains('disabled')) return;
@@ -701,7 +867,7 @@ function checkAnswer() {
     let isCorrect = false;
     let correctSolutionText = '';
     let textToSpeak = '';
-    const elapsedSec = (Date.now() - questionStartTime) / 1000;
+    const elapsedSec = questionStartTime ? (Date.now() - questionStartTime) / 1000 : 0;
 
     if (currentItem.type === 'vocab_type') {
         const val = document.getElementById('user-input').value.trim();
@@ -727,6 +893,7 @@ function checkAnswer() {
         textToSpeak = currentItem.targetText;
     } else if (currentItem.type === 'grammar') {
         const c = currentItem.data.conjugations;
+        if (!currentItem.prefilled) currentItem.prefilled = {};
         const inputs = {
             je: document.getElementById('gram-je'),
             tu: document.getElementById('gram-tu'),
@@ -745,9 +912,21 @@ function checkAnswer() {
         };
 
         let allGrammarCorrect = true;
+        let incorrectConjugations = [];
+
         Object.keys(c).forEach(k => {
-            if (cleanStr(userVals[k]) !== cleanStr(c[k])) {
+            if (currentItem.prefilled[k]) return; // already correct
+
+            if (cleanStr(userVals[k]) === cleanStr(c[k])) {
+                currentItem.prefilled[k] = c[k];
+                if (inputs[k]) {
+                    inputs[k].style.borderColor = 'var(--duo-green)';
+                    inputs[k].style.background = 'var(--duo-green-light)';
+                    inputs[k].disabled = true;
+                }
+            } else {
                 allGrammarCorrect = false;
+                incorrectConjugations.push({ pronoun: k, correct: c[k] });
                 if (inputs[k]) {
                     inputs[k].style.borderColor = 'var(--duo-red)';
                     inputs[k].style.background = 'var(--duo-red-light)';
@@ -757,8 +936,16 @@ function checkAnswer() {
         });
 
         isCorrect = allGrammarCorrect;
+        if (isCorrect) {
+            currentItem.prefilled = {};
+        }
         correctSolutionText = `${c.je}, ${c.tu}, ${c.il}, ${c.nous}, ${c.vous}, ${c.ils}`;
-        textToSpeak = currentItem.data.verb;
+        
+        if (!isCorrect && incorrectConjugations.length > 0) {
+            textToSpeak = incorrectConjugations.map(ic => `${ic.pronoun} ${ic.correct}`).join('. ');
+        } else {
+            textToSpeak = currentItem.data.verb;
+        }
     } else if (currentItem.type === 'fill') {
         const fillInputs = document.querySelectorAll('.fill-blank-input');
         const answers = currentItem.data.answer.split(/[,/]/).map(a => cleanStr(a));
@@ -791,16 +978,22 @@ function checkAnswer() {
         isCorrect = (cleanStr(userSentence) === cleanStr(currentItem.data.sentence));
         correctSolutionText = currentItem.data.sentence;
         textToSpeak = currentItem.data.sentence;
+    } else if (currentItem.type === 'vocab_match_fr' || currentItem.type === 'vocab_match_audio') {
+        const totalItems = currentItem.items.length;
+        isCorrect = (matchedPairs.length === totalItems);
+        correctSolutionText = currentItem.items.map(i => `${i.fr} = ${i.es}`).join(', ');
+        textToSpeak = currentItem.items.map(i => i.fr).join('. ');
     }
 
     // Spaced repetition score updating
     const targetData = currentItem.data || currentItem.item;
-    if (targetData) {
-        targetData.lastAskedDate = Date.now();
-        const currentScore = targetData.score || 0;
+    const targetItems = currentItem.items;
+
+    const processItemScore = (itemObj) => {
+        itemObj.lastAskedDate = Date.now();
+        const currentScore = itemObj.score || 0;
         if (!isCorrect) {
-            targetData.score = 1;
-            retryQueue.push(currentItem);
+            itemObj.score = 1;
         } else {
             const isGrammar = (currentItem.type === 'grammar');
             const isPronunciation = (currentItem.type === 'speaking' || currentItem.type === 'phoneme_speak');
@@ -808,12 +1001,26 @@ function checkAnswer() {
             const slowLimit = isGrammar ? 50 : (isPronunciation ? 30 : 15);
 
             if (currentScore === 0) {
-                targetData.score = 1;
+                itemObj.score = 1;
             } else if (elapsedSec < fastLimit) {
-                targetData.score = Math.min(5, currentScore + 1);
+                itemObj.score = Math.min(5, currentScore + 1);
             } else if (elapsedSec > slowLimit) {
-                targetData.score = Math.max(1, currentScore - 1);
+                itemObj.score = Math.max(1, currentScore - 1);
             }
+        }
+    };
+
+    if (targetItems && Array.isArray(targetItems)) {
+        if (!isCorrect) {
+            retryQueue.push(currentItem);
+        }
+        targetItems.forEach(it => processItemScore(it));
+    } else if (targetData) {
+        if (!isCorrect) {
+            targetData.score = 1;
+            retryQueue.push(currentItem);
+        } else {
+            processItemScore(targetData);
         }
     }
     saveDB();
@@ -855,18 +1062,6 @@ function checkAnswer() {
 function finishSession() {
     sessionCount++;
     playSound('finish');
-    
-    let decayApplied = false;
-    if (sessionCount % 10 === 0) {
-        decayApplied = true;
-        ['vocab', 'phonemes', 'grammar', 'fill', 'order'].forEach(cat => {
-            if (db[cat]) {
-                db[cat].forEach(item => {
-                    item.score = Math.max(1, (item.score || 1) - 1);
-                });
-            }
-        });
-    }
     saveDB();
 
     document.getElementById('bottom-drawer').style.display = 'none';
@@ -886,7 +1081,6 @@ function finishSession() {
             
             <div style="background: var(--duo-gray-light); padding: 15px; border-radius: 12px; margin-bottom: 25px; text-align: left;">
                 <p><strong>Sesiones completadas:</strong> ${sessionCount}</p>
-                ${decayApplied ? '<p style="color: #b78103; font-weight: 800; margin-top: 5px;">⏳ ¡10 sesiones cumplidas! Ajuste periódico aplicado.</p>' : `<p>Próximo ajuste automático en: <strong>${10 - (sessionCount % 10)} sesiones</strong>.</p>`}
             </div>
 
             <button class="action-btn" onclick="startNewSession()">🚀 Iniciar Nueva Sesión</button>

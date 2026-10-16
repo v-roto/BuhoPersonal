@@ -1441,6 +1441,71 @@ async function initLocalFileHandle() {
     }
 }
 
+async function openAndConnectLocalFile() {
+    if (!window.showOpenFilePicker) {
+        showToast("❌ Tu navegador no soporta abrir y conectar archivos locales directamente.");
+        return;
+    }
+    try {
+        const options = {
+            types: [{
+                description: 'JSON Backup Files',
+                accept: { 'application/json': ['.json'] }
+            }],
+            multiple: false
+        };
+        const [handle] = await window.showOpenFilePicker(options);
+        if (!handle) return;
+
+        const file = await handle.getFile();
+        const text = await file.text();
+        
+        let parsedData;
+        try {
+            parsedData = JSON.parse(text);
+        } catch (err) {
+            showToast("❌ Error: El archivo no es un JSON válido.");
+            return;
+        }
+
+        if (parsedData.vocab && parsedData.grammar) {
+            db = parsedData;
+            if (!db.fill) db.fill = [];
+            if (!db.order) db.order = [];
+            if (!db.phonemes) db.phonemes = [];
+            if (parsedData.sessionCount !== undefined) {
+                sessionCount = parsedData.sessionCount;
+            }
+            saveDB();
+
+            localFileHandle = handle;
+            await saveHandleToIDB(localFileHandle);
+            updateLocalFileStatusUI(true, localFileHandle.name);
+            showToast("📁 Archivo cargado y conectado para auto-guardado.");
+            setTimeout(() => location.reload(), 1500);
+        } else if (parsedData.vocab || parsedData.phonemes) {
+            db = parsedData;
+            if (!db.fill) db.fill = [];
+            if (!db.order) db.order = [];
+            if (!db.phonemes) db.phonemes = [];
+            saveDB();
+
+            localFileHandle = handle;
+            await saveHandleToIDB(localFileHandle);
+            updateLocalFileStatusUI(true, localFileHandle.name);
+            showToast("📁 Archivo cargado y conectado para auto-guardado.");
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast("❌ El archivo no tiene el formato correcto (faltan propiedades de vocabulario).");
+        }
+    } catch (err) {
+        if (err.name !== 'AbortError') {
+            showToast("❌ Error al abrir el archivo.");
+            console.error(err);
+        }
+    }
+}
+
 async function connectLocalFile() {
     if (!window.showSaveFilePicker) {
         showToast("❌ Tu navegador no soporta el acceso directo al sistema de archivos.");

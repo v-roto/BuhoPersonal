@@ -288,10 +288,7 @@
                 </div>
                 <div class="form-grid-2">
                     <button class="action-btn" style="background: var(--duo-blue); border-color: var(--duo-blue-dark);" onclick="exportDataJSON()">📥 Exportar Respaldo (.json)</button>
-                    <label class="action-btn" style="background: white; color: var(--duo-blue); border: 2px solid var(--duo-blue); border-bottom-width:4px; text-align:center; display:block; cursor:pointer;">
-                        📤 Cargar Respaldo
-                        <input type="file" id="import-json-file" accept=".json" onchange="importDataJSON(event)" style="display:none;">
-                    </label>
+                    <button class="action-btn" style="background: white; color: var(--duo-blue); border: 2px solid var(--duo-blue); border-bottom-width:4px; text-align:center;" onclick="openAndConnectLocalFile()">📤 Abrir y Conectar Respaldo</button>
                 </div>
             </div>
         </section>

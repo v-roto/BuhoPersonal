@@ -386,12 +386,18 @@ function startNewSession() {
         vocabFiltered.forEach(item => {
             pool.push({ category: 'vocab', type: 'vocab_type', isSpeaking: false, data: item, score: item.score || 0 });
         });
-        for (let i = 0; i < vocabFiltered.length; i += 4) {
-            let chunk = vocabFiltered.slice(i, i + 4);
-            if (chunk.length >= 2) {
-                let avgScore = Math.round(chunk.reduce((sum, it) => sum + (it.score || 0), 0) / chunk.length);
-                pool.push({ category: 'vocab', type: 'vocab_match_fr', isSpeaking: false, items: chunk, score: avgScore });
-                pool.push({ category: 'vocab', type: 'vocab_match_audio', isSpeaking: false, items: chunk, score: avgScore });
+        let allVocabPool = db.vocab || [];
+        let vocabSource = currentTopicFilter === 'all' ? allVocabPool : allVocabPool.filter(item => matchesTopic(item));
+        if (vocabSource.length >= 2) {
+            let numMatchExercises = Math.min(3, Math.max(1, Math.floor(vocabSource.length / 2)));
+            for (let m = 0; m < numMatchExercises; m++) {
+                let shuffled = [...vocabSource].sort(() => Math.random() - 0.5);
+                let chunk = shuffled.slice(0, 4);
+                if (chunk.length >= 2) {
+                    let avgScore = Math.round(chunk.reduce((sum, it) => sum + (it.score || 0), 0) / chunk.length);
+                    pool.push({ category: 'vocab', type: 'vocab_match_fr', isSpeaking: false, items: chunk, score: avgScore });
+                    pool.push({ category: 'vocab', type: 'vocab_match_audio', isSpeaking: false, items: chunk, score: avgScore });
+                }
             }
         }
     }
@@ -597,10 +603,16 @@ function renderExercise(item) {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                 <div style="display: flex; flex-direction: column; gap: 10px;" id="match-left-column">
                     ${item.items.map((it, idx) => `
-                        <div class="match-tile" id="match-left-${idx}" onclick="selectMatchItem('left', ${idx}, '${it.id}')" style="background: white; border: 2px solid var(--duo-gray-border); border-bottom-width: 4px; border-radius: 12px; padding: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
-                            <span>${isAudioOnly ? '🔊 Audio #' + (idx + 1) : it.fr}</span>
-                            <button class="speaker-btn" style="width: 32px; height: 32px; font-size: 1rem;" onmousedown="event.preventDefault()" onclick="event.stopPropagation(); speakFrench('${it.fr.replace(/'/g, "\\'")}')">🔊</button>
-                        </div>
+                        ${isAudioOnly ? `
+                            <div class="match-tile" id="match-left-${idx}" onclick="selectMatchItem('left', ${idx}, '${it.id}'); speakFrench('${it.fr.replace(/'/g, "\\'")}')" style="background: white; border: 2px solid var(--duo-gray-border); border-bottom-width: 4px; border-radius: 12px; padding: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">
+                                🔊
+                            </div>
+                        ` : `
+                            <div class="match-tile" id="match-left-${idx}" onclick="selectMatchItem('left', ${idx}, '${it.id}')" style="background: white; border: 2px solid var(--duo-gray-border); border-bottom-width: 4px; border-radius: 12px; padding: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+                                <span>${it.fr}</span>
+                                <button class="speaker-btn" style="width: 32px; height: 32px; font-size: 1rem;" onmousedown="event.preventDefault()" onclick="event.stopPropagation(); speakFrench('${it.fr.replace(/'/g, "\\'")}')">🔊</button>
+                            </div>
+                        `}
                     `).join('')}
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 10px;" id="match-right-column">

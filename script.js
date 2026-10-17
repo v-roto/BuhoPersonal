@@ -1136,8 +1136,17 @@ function importDataJSON(event) {
     const fileReader = new FileReader();
     fileReader.onload = function(e) {
         try {
-            const parsedData = JSON.parse(e.target.result);
+            const rawData = JSON.parse(e.target.result);
+            const parsedData = (rawData.db && (rawData.db.vocab || rawData.db.phonemes || rawData.db.grammar)) ? rawData.db : rawData;
             if (parsedData.vocab && parsedData.grammar) {
+                db = parsedData;
+                if(!db.fill) db.fill = [];
+                if(!db.order) db.order = [];
+                if(!db.phonemes) db.phonemes = [];
+                saveDB();
+                showToast("¡Base de datos cargada correctamente!");
+                setTimeout(() => location.reload(), 1500); 
+            } else if (parsedData.vocab || parsedData.phonemes) {
                 db = parsedData;
                 if(!db.fill) db.fill = [];
                 if(!db.order) db.order = [];
@@ -1666,21 +1675,24 @@ async function openAndConnectLocalFile() {
         const file = await handle.getFile();
         const text = await file.text();
         
-        let parsedData;
+        let rawData;
         try {
-            parsedData = JSON.parse(text);
+            rawData = JSON.parse(text);
         } catch (err) {
             showToast("❌ Error: El archivo no es un JSON válido.");
             return;
         }
+
+        const parsedData = (rawData.db && (rawData.db.vocab || rawData.db.phonemes || rawData.db.grammar)) ? rawData.db : rawData;
+        const sessionCountVal = rawData.sessionCount !== undefined ? rawData.sessionCount : parsedData.sessionCount;
 
         if (parsedData.vocab && parsedData.grammar) {
             db = parsedData;
             if (!db.fill) db.fill = [];
             if (!db.order) db.order = [];
             if (!db.phonemes) db.phonemes = [];
-            if (parsedData.sessionCount !== undefined) {
-                sessionCount = parsedData.sessionCount;
+            if (sessionCountVal !== undefined) {
+                sessionCount = sessionCountVal;
             }
             saveDB();
 
@@ -1694,6 +1706,9 @@ async function openAndConnectLocalFile() {
             if (!db.fill) db.fill = [];
             if (!db.order) db.order = [];
             if (!db.phonemes) db.phonemes = [];
+            if (sessionCountVal !== undefined) {
+                sessionCount = sessionCountVal;
+            }
             saveDB();
 
             localFileHandle = handle;

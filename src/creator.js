@@ -1,7 +1,7 @@
 // --- Módulo del Creador de Contenido ---
 
 import { db, saveDB, showToast } from './state.js';
-import { playSound, updateVoiceSettings, testSelectedVoice, populateBrowserVoices } from './audio.js';
+import { playSound, updateVoiceSettings, testSelectedVoice, populateBrowserVoices, handleSoundUpload } from './audio.js';
 import { CEFR_LEVELS } from './levels.js';
 
 let editingItemId = null;

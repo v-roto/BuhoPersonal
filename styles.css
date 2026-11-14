@@ -39,7 +39,7 @@ header {
     flex-direction: column;
     padding: 12px 25px;
     border-bottom: 2px solid var(--duo-gray-border);
-    max-width: 900px;
+    max-width: 1280px;
     margin: 0 auto;
     width: 100%;
 }
@@ -121,7 +121,7 @@ header {
 /* Main Container */
 main {
     flex: 1;
-    max-width: 800px;
+    max-width: 1280px;
     width: 100%;
     margin: 0 auto;
     padding: 25px 20px 140px 20px;
@@ -597,7 +597,7 @@ main {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    max-width: 900px;
+    max-width: 1280px;
     margin: 0 auto;
     z-index: 100;
     transition: background 0.2s;
@@ -690,7 +690,7 @@ main {
 /* Mobile Responsiveness & Fit Adjustments */
 .mobile-progress-bar-outer {
     display: none;
-    max-width: 900px;
+    max-width: 1280px;
     margin: 0 auto;
     padding: 6px 20px;
     background: white;
@@ -751,3 +751,135 @@ main {
         font-size: 1.05rem;
     }
 }
+
+/* --- Dark Mode --- */
+body.dark-mode {
+    background-color: #131f24;
+    color: #e5e5e5;
+    --duo-gray-light: #1f2937;
+    --duo-gray-border: #374151;
+    --duo-text: #e5e5e5;
+    --duo-text-muted: #9ca3af;
+}
+
+body.dark-mode header,
+body.dark-mode .mobile-progress-bar-outer,
+body.dark-mode .bottom-drawer,
+body.dark-mode .nav-btn,
+body.dark-mode .creator-card,
+body.dark-mode .vocab-card,
+body.dark-mode .summary-card,
+body.dark-mode .word-tile,
+body.dark-mode .match-tile,
+body.dark-mode .grammar-header,
+body.dark-mode .fill-blank-sentence {
+    background-color: #1f2937 !important;
+    color: #e5e5e5 !important;
+    border-color: #374151 !important;
+}
+
+body.dark-mode .duo-input,
+body.dark-mode select.duo-input,
+body.dark-mode textarea.duo-input {
+    background-color: #111827 !important;
+    color: #e5e5e5 !important;
+    border-color: #374151 !important;
+}
+
+body.dark-mode .nav-btn.active {
+    background: #1e3a8a !important;
+    border-color: var(--duo-blue);
+    color: var(--duo-blue) !important;
+}
+
+/* --- Hamburger Menu & Responsive Navigation --- */
+.hamburger-btn {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.6rem;
+    cursor: pointer;
+    color: var(--duo-text);
+    padding: 4px;
+}
+
+.nav-links-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+@media (max-width: 768px) {
+    .hamburger-btn {
+        display: block;
+    }
+    .nav-links-container {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 65px;
+        left: 0;
+        right: 0;
+        background: white;
+        border-bottom: 2px solid var(--duo-gray-border);
+        padding: 15px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        z-index: 200;
+        align-items: stretch;
+    }
+    body.dark-mode .nav-links-container {
+        background: #1f2937;
+    }
+    .nav-links-container.mobile-open {
+        display: flex;
+    }
+    .nav-btn {
+        text-align: center;
+        width: 100%;
+    }
+}
+
+body.hide-header header,
+body.hide-header .mobile-progress-bar-outer {
+    display: none !important;
+}
+
+/* --- Animated Toggle Switch --- */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 28px;
+}
+.switch input { 
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #ccc;
+    transition: .3s;
+    border-radius: 28px;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+}
+input:checked + .slider {
+    background-color: var(--duo-blue);
+}
+input:checked + .slider:before {
+    transform: translateX(24px);
+}
+
+

@@ -4,7 +4,7 @@ import { startNewSession, loadNextQuestion, handleDrawerAction } from './exercis
 import { renderCreatorLists, populateTopicDropdown } from './creator.js';
 import { updateHeaderStats, initLocalFileHandle, connectLocalFile, reconnectLocalFile, openAndConnectLocalFile, setTopicFilter } from './state.js';
 import { getLevelFilter, setLevelFilter, CEFR_LEVELS } from './levels.js';
-import { setUiLang, getUiLang, setStudyLang, getStudyLang, getTheme, setTheme, applyTheme, t } from './i18n.js';
+import { setUiLang, getUiLang, setStudyLang, getStudyLang, getTheme, setTheme, applyTheme, applyTranslationsToDOM, t } from './i18n.js';
 import { updateVoiceSettings, testSelectedVoice, populateBrowserVoices } from './audio.js';
 
 window.switchView = function(view) {
@@ -13,6 +13,9 @@ window.switchView = function(view) {
 
     const navContainer = document.getElementById('nav-links-container');
     if (navContainer) navContainer.classList.remove('mobile-open');
+
+    // En Home ocultamos la barra superior (es redundante con los botones de acción)
+    document.body.classList.toggle('hide-header', view === 'home');
 
     if (view === 'home') {
         document.getElementById('view-home').classList.add('active');
@@ -39,6 +42,14 @@ window.toggleMobileNav = function() {
     }
 };
 
+document.addEventListener('click', function(e) {
+    const left = document.querySelector('.top-bar-left');
+    const navContainer = document.getElementById('nav-links-container');
+    if (navContainer && left && !left.contains(e.target)) {
+        navContainer.classList.remove('mobile-open');
+    }
+});
+
 window.changeTopicFilter = function() {
     const val = document.getElementById('topic-filter-select').value;
     setTopicFilter(val);
@@ -58,24 +69,34 @@ window.changeHomeLevelFilter = function() {
     setLevelFilter(val);
     const headerLvl = document.getElementById('level-filter-select');
     if (headerLvl) headerLvl.value = val;
-    startNewSession();
 };
 
-window.changeUiLanguage = function() {
-    const val = document.getElementById('ui-lang-select').value;
-    setUiLang(val);
-    location.reload();
+const UI_LANG_CYCLE = ['es', 'en', 'fr'];
+const UI_LANG_FLAGS = { es: '🇪🇸', en: '🇬🇧', fr: '🇫🇷' };
+
+function updateLangButton() {
+    const btn = document.getElementById('lang-toggle-btn');
+    if (btn) btn.textContent = UI_LANG_FLAGS[getUiLang()] || '🌐';
+}
+
+window.cycleUiLanguage = function() {
+    const idx = UI_LANG_CYCLE.indexOf(getUiLang());
+    const next = UI_LANG_CYCLE[(idx + 1) % UI_LANG_CYCLE.length];
+    setUiLang(next);
+    applyTranslationsToDOM();
+    updateLangButton();
+    renderCreatorLists();
 };
 
 window.changeStudyLanguage = function() {
     const val = document.getElementById('study-lang-select').value;
     setStudyLang(val);
-    location.reload();
 };
 
-window.changeThemeMode = function() {
-    const val = document.getElementById('theme-select').value;
-    setTheme(val);
+window.toggleThemeSwitch = function() {
+    const checkbox = document.getElementById('theme-toggle-checkbox');
+    if (!checkbox) return;
+    setTheme(checkbox.checked ? 'dark' : 'light');
 };
 
 // Global Enter Key for Practice
@@ -97,6 +118,7 @@ window.openAndConnectLocalFile = () => openAndConnectLocalFile(() => location.re
 // Inicialización inmediata de la aplicación
 function initApp() {
     applyTheme();
+    applyTranslationsToDOM();
     updateHeaderStats();
     populateTopicDropdown();
 
@@ -106,14 +128,14 @@ function initApp() {
     const homeLevelSelect = document.getElementById('home-level-select');
     if (homeLevelSelect) homeLevelSelect.value = currentLvl;
 
-    const uiLangSelect = document.getElementById('ui-lang-select');
-    if (uiLangSelect) uiLangSelect.value = getUiLang();
-
     const studyLangSelect = document.getElementById('study-lang-select');
     if (studyLangSelect) studyLangSelect.value = getStudyLang();
 
-    const themeSelect = document.getElementById('theme-select');
-    if (themeSelect) themeSelect.value = getTheme();
+    updateLangButton();
+
+    // Sincronizar el switch visual con el tema guardado
+    const themeCheckbox = document.getElementById('theme-toggle-checkbox');
+    if (themeCheckbox) themeCheckbox.checked = (getTheme() === 'dark');
 
     // Iniciar por defecto en Home
     switchView('home');

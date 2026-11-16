@@ -3,6 +3,7 @@
 import { db, saveDB, showToast } from './state.js';
 import { playSound, updateVoiceSettings, testSelectedVoice, populateBrowserVoices, handleSoundUpload } from './audio.js';
 import { CEFR_LEVELS } from './levels.js';
+import { t } from './i18n.js';
 
 let editingItemId = null;
 let editingItemType = null;
@@ -28,7 +29,7 @@ export function renderCreatorLists() {
 
     if (listGrammar) {
         listGrammar.innerHTML = db.grammar.map((item, idx) => `
-            <span class="item-chip">📗 [${item.level || 'A1'}] Verbo: <strong>${item.verb}</strong> <span style="font-size:0.75rem; color:#888;">[${item.topic || 'General'}]</span> <span class="chip-score">⭐ ${item.score || 0}/5</span> <button class="nav-btn" style="padding:1px 6px; font-size:0.7rem; margin-left:4px;" onclick="window.editItem('grammar', ${idx})">✏️</button><span class="remove-chip" onclick="window.deleteItem('grammar', ${idx})">✕</span></span>
+            <span class="item-chip">📗 [${item.level || 'A1'}] ${t('verbLabel')}: <strong>${item.verb}</strong> <span style="font-size:0.75rem; color:#888;">[${item.topic || 'General'}]</span> <span class="chip-score">⭐ ${item.score || 0}/5</span> <button class="nav-btn" style="padding:1px 6px; font-size:0.7rem; margin-left:4px;" onclick="window.editItem('grammar', ${idx})">✏️</button><span class="remove-chip" onclick="window.deleteItem('grammar', ${idx})">✕</span></span>
         `).join('');
     }
 
@@ -58,11 +59,11 @@ export function populateTopicDropdown() {
     });
 
     const currentVal = select.value;
-    select.innerHTML = '<option value="all">📚 Todos los Temas</option>';
-    topics.forEach(t => {
+    select.innerHTML = `<option value="all">${t('allTopics')}</option>`;
+    topics.forEach(topic => {
         const opt = document.createElement('option');
-        opt.value = t;
-        opt.textContent = `📁 ${t}`;
+        opt.value = topic;
+        opt.textContent = `📁 ${topic}`;
         select.appendChild(opt);
     });
     select.value = topics.has(currentVal) || currentVal === 'all' ? currentVal : 'all';
@@ -98,8 +99,8 @@ export function editItem(type, index) {
         document.getElementById('add-vocab-topic').value = item.topic || 'General';
         if (document.getElementById('add-vocab-level')) document.getElementById('add-vocab-level').value = item.level || 'A1';
         if (item.img) document.getElementById('add-vocab-emoji').value = item.img;
-        document.getElementById('vocab-form-title').textContent = "Editar Vocabulario";
-        document.getElementById('vocab-submit-btn').textContent = "Actualizar Vocabulario";
+        document.getElementById('vocab-form-title').textContent = t('editVocabTitle');
+        document.getElementById('vocab-submit-btn').textContent = t('updateVocab');
         document.getElementById('vocab-cancel-btn').style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (type === 'phonemes') {
@@ -108,8 +109,8 @@ export function editItem(type, index) {
         document.getElementById('add-phoneme-trans').value = item.trans || '';
         document.getElementById('add-phoneme-topic').value = item.topic || 'General';
         if (item.img) document.getElementById('add-phoneme-emoji').value = item.img;
-        document.getElementById('phoneme-form-title').textContent = "Editar Fonema";
-        document.getElementById('phoneme-submit-btn').textContent = "Actualizar Fonema";
+        document.getElementById('phoneme-form-title').textContent = t('editPhonemeTitle');
+        document.getElementById('phoneme-submit-btn').textContent = t('updatePhoneme');
         document.getElementById('phoneme-cancel-btn').style.display = 'block';
     } else if (type === 'grammar') {
         document.getElementById('add-gram-verb').value = item.verb || '';
@@ -123,8 +124,8 @@ export function editItem(type, index) {
             document.getElementById('add-gram-vous').value = item.conjugations.vous || '';
             document.getElementById('add-gram-ils').value = item.conjugations.ils || '';
         }
-        document.getElementById('grammar-form-title').textContent = "Editar Tabla Gramatical";
-        document.getElementById('grammar-submit-btn').textContent = "Actualizar Tabla";
+        document.getElementById('grammar-form-title').textContent = t('editGrammarTitle');
+        document.getElementById('grammar-submit-btn').textContent = t('updateGrammar');
         document.getElementById('grammar-cancel-btn').style.display = 'block';
     } else if (type === 'fill') {
         document.getElementById('add-fill-title').value = item.title || '';
@@ -132,8 +133,8 @@ export function editItem(type, index) {
         document.getElementById('add-fill-answer').value = item.answer || '';
         document.getElementById('add-fill-topic').value = item.topic || 'General';
         if (item.img) document.getElementById('add-fill-emoji').value = item.img;
-        document.getElementById('fill-form-title').textContent = "Editar Oración";
-        document.getElementById('fill-submit-btn').textContent = "Actualizar Oración";
+        document.getElementById('fill-form-title').textContent = t('editFillTitle');
+        document.getElementById('fill-submit-btn').textContent = t('updateFill');
         document.getElementById('fill-cancel-btn').style.display = 'block';
     } else if (type === 'order') {
         document.getElementById('add-order-title').value = item.title || '';
@@ -141,8 +142,8 @@ export function editItem(type, index) {
         document.getElementById('add-order-extras').value = item.extras ? item.extras.join(', ') : '';
         document.getElementById('add-order-topic').value = item.topic || 'General';
         if (item.img) document.getElementById('add-order-emoji').value = item.img;
-        document.getElementById('order-form-title').textContent = "Editar Reordenar";
-        document.getElementById('order-submit-btn').textContent = "Actualizar Reordenar";
+        document.getElementById('order-form-title').textContent = t('editOrderTitle');
+        document.getElementById('order-submit-btn').textContent = t('updateOrder');
         document.getElementById('order-cancel-btn').style.display = 'block';
     }
 }
@@ -154,40 +155,40 @@ export function cancelEdit(type) {
         document.getElementById('add-vocab-fr').value = '';
         document.getElementById('add-vocab-es').value = '';
         document.getElementById('add-vocab-topic').value = 'General';
-        document.getElementById('vocab-form-title').textContent = "1. Vocabulario";
-        document.getElementById('vocab-submit-btn').textContent = "+ Guardar Vocabulario";
+        document.getElementById('vocab-form-title').textContent = t('vocabCardTitle');
+        document.getElementById('vocab-submit-btn').textContent = t('savedVocab');
         document.getElementById('vocab-cancel-btn').style.display = 'none';
     } else if (type === 'phonemes') {
         document.getElementById('add-phoneme-symbol').value = '';
         document.getElementById('add-phoneme-word').value = '';
         document.getElementById('add-phoneme-trans').value = '';
         document.getElementById('add-phoneme-topic').value = 'General';
-        document.getElementById('phoneme-form-title').textContent = "2. Pronunciación de Fonemas y Letras";
-        document.getElementById('phoneme-submit-btn').textContent = "+ Guardar Fonema";
+        document.getElementById('phoneme-form-title').textContent = t('phonemesCardTitle');
+        document.getElementById('phoneme-submit-btn').textContent = t('savePhoneme');
         document.getElementById('phoneme-cancel-btn').style.display = 'none';
     } else if (type === 'grammar') {
         document.getElementById('add-gram-verb').value = '';
         document.getElementById('add-gram-tense').value = '';
         document.getElementById('add-gram-topic').value = 'General';
         ['je', 'tu', 'il', 'nous', 'vous', 'ils'].forEach(k => document.getElementById(`add-gram-${k}`).value = '');
-        document.getElementById('grammar-form-title').textContent = "3. Tabla Gramatical (Conjugaciones)";
-        document.getElementById('grammar-submit-btn').textContent = "+ Guardar Tabla Gramatical";
+        document.getElementById('grammar-form-title').textContent = t('grammarCardTitle');
+        document.getElementById('grammar-submit-btn').textContent = t('saveGrammar');
         document.getElementById('grammar-cancel-btn').style.display = 'none';
     } else if (type === 'fill') {
         document.getElementById('add-fill-title').value = '';
         document.getElementById('add-fill-sentence').value = '';
         document.getElementById('add-fill-answer').value = '';
         document.getElementById('add-fill-topic').value = 'General';
-        document.getElementById('fill-form-title').textContent = "4. Completar Oración";
-        document.getElementById('fill-submit-btn').textContent = "+ Guardar Oración";
+        document.getElementById('fill-form-title').textContent = t('fillCardTitle');
+        document.getElementById('fill-submit-btn').textContent = t('saveSentence');
         document.getElementById('fill-cancel-btn').style.display = 'none';
     } else if (type === 'order') {
         document.getElementById('add-order-title').value = '';
         document.getElementById('add-order-sentence').value = '';
         document.getElementById('add-order-extras').value = '';
         document.getElementById('add-order-topic').value = 'General';
-        document.getElementById('order-form-title').textContent = "5. Reordenar Oración";
-        document.getElementById('order-submit-btn').textContent = "+ Guardar Reordenar";
+        document.getElementById('order-form-title').textContent = t('orderCardTitle');
+        document.getElementById('order-submit-btn').textContent = t('saveOrder');
         document.getElementById('order-cancel-btn').style.display = 'none';
     }
 }

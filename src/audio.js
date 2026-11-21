@@ -1,6 +1,7 @@
 // --- Módulo de Audio, Voz (TTS) y Reconocimiento (STT) ---
 
 import { showToast } from './state.js';
+import { t, getStudyLang, getStudyLangCode, getStudyLangName } from './i18n.js';
 
 let globalAudioCtx = null;
 let browserVoices = [];
@@ -10,7 +11,7 @@ export function handleSoundUpload(event, type) {
     const file = event.target.files[0];
     if (file) {
         if (file.size > 1500000) {
-            showToast("❌ Error: El audio es muy pesado. Usa un archivo más pequeño (<1.5MB).");
+            showToast(t('soundTooLarge'));
             event.target.value = "";
             return;
         }
@@ -18,9 +19,9 @@ export function handleSoundUpload(event, type) {
         reader.onload = function(e) {
             try {
                 localStorage.setItem(`duo_french_sound_${type}`, e.target.result);
-                showToast(`Sonido personalizado guardado.`);
+                showToast(t('soundSaved'));
             } catch (err) {
-                showToast("❌ Error: El almacenamiento del navegador está lleno.");
+                showToast(t('storageFull'));
             }
         };
         reader.readAsDataURL(file);
@@ -89,14 +90,14 @@ function playFallbackSynthSound(type) {
 export function populateBrowserVoices() {
     if ('speechSynthesis' in window) {
         let allVoices = window.speechSynthesis.getVoices();
-        browserVoices = allVoices.filter(v => v.lang.toLowerCase().includes('fr'));
+        browserVoices = allVoices.filter(v => v.lang.toLowerCase().startsWith(getStudyLang()));
         if (browserVoices.length === 0) browserVoices = allVoices; 
 
         const select = document.getElementById('browser-voice-select');
         if (!select) return;
         select.innerHTML = '';
         if (browserVoices.length === 0) {
-            select.innerHTML = '<option value="">No se encontraron voces instaladas</option>';
+            select.innerHTML = `<option value="">${t('noVoicesFound')}</option>`;
         } else {
             browserVoices.forEach(voice => {
                 const opt = document.createElement('option');
@@ -120,11 +121,19 @@ if ('speechSynthesis' in window) {
     window.speechSynthesis.onvoiceschanged = populateBrowserVoices;
 }
 
+const TEST_PHRASES = {
+    fr: "Bonjour ! Bienvenue dans vos leçons de français.",
+    en: "Hello! Welcome to your English lessons.",
+    es: "¡Hola! Bienvenido a tus lecciones de español.",
+    it: "Ciao! Benvenuto nelle tue lezioni di italiano.",
+    de: "Hallo! Willkommen zu deinen Deutschstunden."
+};
+
 export function speakFrench(text) {
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'fr-FR'; 
+        utterance.lang = getStudyLangCode();
         utterance.rate = 1.2;
         const selectedVoiceName = localStorage.getItem('duo_french_browser_voice');
         if (selectedVoiceName && browserVoices.length > 0) {
@@ -141,17 +150,17 @@ export function speakFrench(text) {
 export function updateVoiceSettings() {
     const browserVoice = document.getElementById('browser-voice-select').value;
     localStorage.setItem('duo_french_browser_voice', browserVoice);
-    showToast("Configuración de voz guardada.");
+    showToast(t('voiceSaved'));
 }
 
 export function testSelectedVoice() {
-    speakFrench("Bonjour! Bienvenue dans vos leçons de français.");
+    speakFrench(TEST_PHRASES[getStudyLang()] || TEST_PHRASES.fr);
 }
 
 export function toggleSpeechRecognition(onResultCallback) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        showToast("Tu navegador no soporta captura de voz nativa.");
+        showToast(t('speechNotSupported'));
         return;
     }
 
@@ -165,13 +174,13 @@ export function toggleSpeechRecognition(onResultCallback) {
     }
 
     speechRecognitionInstance = new SpeechRecognition();
-    speechRecognitionInstance.lang = 'fr-FR';
+    speechRecognitionInstance.lang = getStudyLangCode();
     speechRecognitionInstance.interimResults = true;
     speechRecognitionInstance.continuous = false;
 
     speechRecognitionInstance.onstart = function() {
         if (micBtn) micBtn.classList.add('recording');
-        if (statusText) statusText.textContent = "🎙️ Escuchando... Habla ahora en francés";
+        if (statusText) statusText.textContent = t('listeningSpeakNow', { lang: getStudyLangName() });
     };
 
     speechRecognitionInstance.onresult = function(event) {
@@ -185,12 +194,12 @@ export function toggleSpeechRecognition(onResultCallback) {
 
     speechRecognitionInstance.onerror = function() {
         if (micBtn) micBtn.classList.remove('recording');
-        if (statusText) statusText.textContent = "Error de escucha. Puedes escribir o intentar de nuevo.";
+        if (statusText) statusText.textContent = t('listenError');
     };
 
     speechRecognitionInstance.onend = function() {
         if (micBtn) micBtn.classList.remove('recording');
-        if (statusText) statusText.textContent = "Grabado. Puedes editar el texto y dar a COMPROBAR.";
+        if (statusText) statusText.textContent = t('recordedEdit');
     };
 
     speechRecognitionInstance.start();

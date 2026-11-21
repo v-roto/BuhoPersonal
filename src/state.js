@@ -1,5 +1,7 @@
 // --- Módulo de Estado, Base de Datos y Persistencia Local ---
 
+import { t } from './i18n.js';
+
 export function showToast(msg) {
     const area = document.getElementById('toast-area');
     if (!area) return;
@@ -143,29 +145,34 @@ async function clearHandleFromIDB() {
 }
 
 export async function initLocalFileHandle() {
-    if (!window.showSaveFilePicker) return;
+    if (!window.showSaveFilePicker) {
+        updateLocalFileStatusUI(false);
+        return;
+    }
     const handle = await getHandleFromIDB();
-    if (handle) {
-        localFileHandle = handle;
-        try {
-            const options = { mode: 'readwrite' };
-            const permission = await localFileHandle.queryPermission(options);
-            if (permission === 'granted') {
-                updateLocalFileStatusUI(true, handle.name);
-                await saveToLocalFile();
-            } else {
-                updateLocalFileStatusUI('needs_permission', handle.name);
-            }
-        } catch (e) {
-            console.error("Error checking handle permission:", e);
-            updateLocalFileStatusUI(false);
+    if (!handle) {
+        updateLocalFileStatusUI(false);
+        return;
+    }
+    localFileHandle = handle;
+    try {
+        const options = { mode: 'readwrite' };
+        const permission = await localFileHandle.queryPermission(options);
+        if (permission === 'granted') {
+            updateLocalFileStatusUI(true, handle.name);
+            await saveToLocalFile();
+        } else {
+            updateLocalFileStatusUI('needs_permission', handle.name);
         }
+    } catch (e) {
+        console.error("Error checking handle permission:", e);
+        updateLocalFileStatusUI(false);
     }
 }
 
 export async function openAndConnectLocalFile(callbackReload) {
     if (!window.showOpenFilePicker) {
-        showToast("❌ Tu navegador no soporta abrir y conectar archivos locales directamente.");
+        showToast(t('fileOpenUnsupported'));
         return;
     }
     try {
@@ -186,7 +193,7 @@ export async function openAndConnectLocalFile(callbackReload) {
         try {
             rawData = JSON.parse(text);
         } catch (err) {
-            showToast("❌ Error: El archivo no es un JSON válido.");
+            showToast(t('invalidJson'));
             return;
         }
 
@@ -204,14 +211,14 @@ export async function openAndConnectLocalFile(callbackReload) {
             localFileHandle = handle;
             await saveHandleToIDB(localFileHandle);
             updateLocalFileStatusUI(true, localFileHandle.name);
-            showToast("📁 Archivo cargado y conectado para auto-guardado.");
+            showToast(t('fileLoadedConnected'));
             if (callbackReload) callbackReload();
         } else {
-            showToast("❌ El archivo no tiene el formato correcto.");
+            showToast(t('invalidFormat'));
         }
     } catch (err) {
         if (err.name !== 'AbortError') {
-            showToast("❌ Error al abrir el archivo.");
+            showToast(t('openFileError'));
             console.error(err);
         }
     }
@@ -219,7 +226,7 @@ export async function openAndConnectLocalFile(callbackReload) {
 
 export async function connectLocalFile() {
     if (!window.showSaveFilePicker) {
-        showToast("❌ Tu navegador no soporta el acceso directo al sistema de archivos.");
+        showToast(t('savePickerUnsupported'));
         return;
     }
     try {
@@ -232,12 +239,12 @@ export async function connectLocalFile() {
         };
         localFileHandle = await window.showSaveFilePicker(options);
         await saveHandleToIDB(localFileHandle);
-        showToast("📁 Archivo local conectado correctamente.");
+        showToast(t('fileConnected'));
         updateLocalFileStatusUI(true, localFileHandle.name);
         await saveToLocalFile();
     } catch (err) {
         if (err.name !== 'AbortError') {
-            showToast("❌ Error al conectar archivo local.");
+            showToast(t('connectFileError'));
             console.error(err);
         }
     }
@@ -249,11 +256,11 @@ export async function reconnectLocalFile() {
         const options = { mode: 'readwrite' };
         const permission = await localFileHandle.requestPermission(options);
         if (permission === 'granted') {
-            showToast("📁 Archivo local reconectado correctamente.");
+            showToast(t('fileReconnected'));
             updateLocalFileStatusUI(true, localFileHandle.name);
             await saveToLocalFile();
         } else {
-            showToast("❌ Permiso denegado.");
+            showToast(t('permissionDenied'));
             updateLocalFileStatusUI(false);
         }
     } catch (err) {
@@ -261,7 +268,7 @@ export async function reconnectLocalFile() {
         await clearHandleFromIDB();
         localFileHandle = null;
         updateLocalFileStatusUI(false);
-        showToast("❌ El archivo anterior ya no es accesible.");
+        showToast(t('previousFileInaccessible'));
     }
 }
 
@@ -274,7 +281,7 @@ export async function saveToLocalFile() {
         await writable.close();
     } catch (err) {
         console.error("Error writing to local file:", err);
-        showToast("⚠️ Advertencia: No se pudo escribir en el archivo local.");
+        showToast(t('writeFileWarning'));
         await clearHandleFromIDB();
         updateLocalFileStatusUI('needs_permission', localFileHandle.name);
         localFileHandle = null;
@@ -287,13 +294,13 @@ function updateLocalFileStatusUI(status, fileName = '') {
     if (!statusEl) return;
 
     if (status === true) {
-        statusEl.innerHTML = `Estado: 🟢 <strong>Conectado y auto-guardando (${fileName || 'archivo'})</strong>`;
+        statusEl.textContent = t('statusConnected', { name: fileName || 'file' });
         if (reconnectBtn) reconnectBtn.style.display = 'none';
     } else if (status === 'needs_permission') {
-        statusEl.innerHTML = `Estado: 🟡 <strong>Archivo vinculado previamente ("${fileName || 'archivo'}"). Haz clic en "Reconectar".</strong>`;
+        statusEl.textContent = t('statusNeedsPermission', { name: fileName || 'file' });
         if (reconnectBtn) reconnectBtn.style.display = 'inline-block';
     } else {
-        statusEl.innerHTML = `Estado: 🔴 Ningún archivo conectado (usando almacenamiento interno)`;
+        statusEl.textContent = t('statusNotConnected');
         if (reconnectBtn) reconnectBtn.style.display = 'none';
     }
 }

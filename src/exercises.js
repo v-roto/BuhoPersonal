@@ -3,7 +3,7 @@
 import { db, sessionCount, currentTopicFilter, saveDB, incrementSessionCount } from './state.js';
 import { speakFrench, toggleSpeechRecognition, playSound } from './audio.js';
 import { getLevelFilter, isItemDue, matchesLevelAndSRS } from './levels.js';
-import { t } from './i18n.js';
+import { t, getStudyLang, getStudyLangName } from './i18n.js';
 
 let sessionQueue = [];
 let retryQueue = [];
@@ -108,7 +108,8 @@ export function startNewSession() {
     const matchesTopicAndLevel = (item) => {
         const matchesTopic = (currentTopicFilter === 'all' || (item.topic || 'General') === currentTopicFilter);
         const matchesLvl = matchesLevelAndSRS(item, currentLevel);
-        return matchesTopic && matchesLvl;
+        const matchesLang = ((item.lang || 'fr') === getStudyLang());
+        return matchesTopic && matchesLvl && matchesLang;
     };
 
     if(db.vocab) {
@@ -117,7 +118,7 @@ export function startNewSession() {
             pool.push({ category: 'vocab', type: 'vocab_type', isSpeaking: false, data: item, score: item.score || 0 });
         });
         let allVocabPool = db.vocab || [];
-        let vocabSource = currentTopicFilter === 'all' ? allVocabPool : allVocabPool.filter(item => (item.topic || 'General') === currentTopicFilter);
+        let vocabSource = (currentTopicFilter === 'all' ? allVocabPool : allVocabPool.filter(item => (item.topic || 'General') === currentTopicFilter)).filter(item => (item.lang || 'fr') === getStudyLang());
         if (vocabSource.length >= 2) {
             let numMatchExercises = Math.min(3, Math.max(1, Math.floor(vocabSource.length / 2)));
             for (let m = 0; m < numMatchExercises; m++) {
@@ -152,7 +153,7 @@ export function startNewSession() {
                     }
                 });
                 fullSentence += norm.punct;
-                pool.push({ category: 'fill', type: 'speaking', isSpeaking: true, targetText: fullSentence.trim(), promptText: `Pronuncia la oración completa: "${item.title}"`, item: item, score: item.score || 0 });
+                pool.push({ category: 'fill', type: 'speaking', isSpeaking: true, targetText: fullSentence.trim(), promptText: t('speakCompleteSentence', { title: item.title }), item: item, score: item.score || 0 });
             }
         });
     }
@@ -160,7 +161,7 @@ export function startNewSession() {
         db.order.forEach(item => {
             if (matchesTopicAndLevel(item)) {
                 pool.push({ category: 'order', type: 'order', isSpeaking: false, data: item, score: item.score || 0 });
-                pool.push({ category: 'order', type: 'speaking', isSpeaking: true, targetText: item.sentence, promptText: `Pronuncia la oración: "${item.title}"`, item: item, score: item.score || 0 });
+                pool.push({ category: 'order', type: 'speaking', isSpeaking: true, targetText: item.sentence, promptText: t('speakSentence', { title: item.title }), item: item, score: item.score || 0 });
             }
         });
     }
@@ -170,6 +171,11 @@ export function startNewSession() {
                 pool.push({ category: 'phoneme', type: 'phoneme_speak', isSpeaking: true, data: item, score: item.score || 0 });
             }
         });
+    }
+
+    if (pool.length === 0) {
+        renderEmptySession();
+        return;
     }
 
     let duePool = pool.filter(i => isItemDue(i.data || i.item || (i.items ? i.items[0] : null)));
@@ -245,6 +251,29 @@ export function startNewSession() {
     loadNextQuestion();
 }
 
+function renderEmptySession() {
+    sessionQueue = [];
+    retryQueue = [];
+    const drawer = document.getElementById('bottom-drawer');
+    if (drawer) drawer.style.display = 'none';
+    const progBar = document.getElementById('progress-bar');
+    if (progBar) progBar.style.width = '0%';
+    const mobileProg = document.getElementById('progress-bar-mobile');
+    if (mobileProg) mobileProg.style.width = '0%';
+
+    const container = document.getElementById('exercise-container');
+    if (!container) return;
+    container.innerHTML = `
+        <div class="summary-card">
+            <div class="summary-icon">📭</div>
+            <p style="font-size: 1.1rem; color: var(--duo-text-muted); margin-bottom: 20px;">
+                ${t('noContentForFilters')}
+            </p>
+            <button class="action-btn" onclick="window.switchView('creator')">${t('btnManageContent')}</button>
+        </div>
+    `;
+}
+
 export function loadNextQuestion() {
     if (sessionQueue.length > 0) {
         currentItem = sessionQueue.shift();
@@ -297,10 +326,10 @@ export function renderExercise(item) {
     const scoreVal = item.score || 0;
     const itemObj = item.data || item.item || (item.items ? item.items[0] : {});
     const itemLevel = itemObj.level || 'A1';
-    const scoreLabel = `[${itemLevel}] ⭐ Dominio: ${scoreVal}/5`;
+    const scoreLabel = `[${itemLevel}] ⭐ ${t('masteryLabel')}: ${scoreVal}/5`;
     const levelBadgeHTML = `
         <div class="level-pill ${isSpeakingBadge}">
-            ${item.isSpeaking ? '🎙️ Micrófono • ' : ''}${scoreLabel} ${isRetryMode ? '• 🔁 Repaso' : ''}
+            ${item.isSpeaking ? '🎙️ ' + t('microphoneBadge') + ' • ' : ''}${scoreLabel} ${isRetryMode ? '• 🔁 ' + t('reviewBadge') : ''}
         </div>`;
 
     const wrapTitleWithBadge = (titleText) => `
@@ -312,7 +341,7 @@ export function renderExercise(item) {
 
     if (item.type === 'vocab_type') {
         container.innerHTML = `
-            ${wrapTitleWithBadge('Escribe la palabra en francés')}
+            ${wrapTitleWithBadge(t('writeWordInStudyLang', { lang: getStudyLangName() }))}
             <div class="vocab-card">
                 ${renderIllustrationHTML(item.data)}
                 <button class="speaker-btn hint-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.data.fr.replace(/'/g, "\\'")}')">${t('listenAudioHint')}</button>
@@ -330,7 +359,7 @@ export function renderExercise(item) {
         const shuffledRight = [...item.items].sort(() => Math.random() - 0.5);
 
         container.innerHTML = `
-            ${wrapTitleWithBadge(isAudioOnly ? 'Une el audio con su traducción' : 'Une la palabra con su traducción')}
+            ${wrapTitleWithBadge(isAudioOnly ? t('matchAudioTranslation') : t('matchWordTranslation'))}
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                 <div style="display: flex; flex-direction: column; gap: 10px;" id="match-left-column">
                     ${item.items.map((it, idx) => `
@@ -358,7 +387,7 @@ export function renderExercise(item) {
     } 
     else if (item.type === 'phoneme_speak') {
         container.innerHTML = `
-            ${wrapTitleWithBadge('Pronunciación de Letras y Fonemas 🎙️')}
+            ${wrapTitleWithBadge(t('phonemePronunciationTitle'))}
             <div class="speaking-card">
                 <div class="phoneme-combined-card">
                     <div class="phoneme-header-row">
@@ -367,7 +396,7 @@ export function renderExercise(item) {
                     </div>
                     <div class="phoneme-example-row">
                         <div>
-                            <span style="font-size: 0.8rem; color: var(--duo-text-muted);">Ejemplo: </span>
+                            <span style="font-size: 0.8rem; color: var(--duo-text-muted);">${t('exampleLabel')} </span>
                             <strong style="color: var(--duo-purple-dark); font-size: 1.1rem;">${item.data.word}</strong>
                             <span style="color: var(--duo-text-muted); font-size: 0.9rem;"> (${item.data.trans})</span>
                             ${renderMiniIllustrationHTML(item.data)}
@@ -379,11 +408,11 @@ export function renderExercise(item) {
                 <div style="margin-top: 5px;">
                     <button class="mic-btn" id="mic-trigger-btn" onclick="window.toggleSpeechRecognition()">🎤</button>
                 </div>
-                <p id="speech-status" style="font-size: 0.85rem; color: var(--duo-text-muted);">Toca el micrófono y pronuncia "${item.data.symbol}" o "${item.data.word}"</p>
+                <p id="speech-status" style="font-size: 0.85rem; color: var(--duo-text-muted);">${t('speakSymbolOrWord', { symbol: item.data.symbol, word: item.data.word })}</p>
 
                 <div class="speech-edit-container">
-                    <label class="speech-edit-label">Lo que escuchó el sistema (puedes editarlo):</label>
-                    <input type="text" id="user-speech-input" class="duo-input" placeholder="Haz clic en el mic o escribe aquí..." style="border-color: #ce93d8;" autocomplete="off">
+                    <label class="speech-edit-label">${t('whatSystemHeard')}</label>
+                    <input type="text" id="user-speech-input" class="duo-input" placeholder="${t('micOrTypePlaceholder')}" style="border-color: #ce93d8;" autocomplete="off">
                 </div>
 
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
@@ -395,7 +424,7 @@ export function renderExercise(item) {
     }
     else if (item.type === 'speaking') {
         container.innerHTML = `
-            ${wrapTitleWithBadge('¡Ejercicio de Pronunciación! 🎙️')}
+            ${wrapTitleWithBadge(t('pronunciationExerciseTitle'))}
             <div class="speaking-card">
                 ${item.item ? renderIllustrationHTML(item.item) : '<div style="font-size: 3.5rem;">🗣️</div>'}
                 <h3 style="font-size: 1.2rem;">${item.promptText}</h3>
@@ -405,11 +434,11 @@ export function renderExercise(item) {
                 <div style="margin-top: 10px;">
                     <button class="mic-btn" id="mic-trigger-btn" onclick="window.toggleSpeechRecognition()">🎤</button>
                 </div>
-                <p id="speech-status" style="font-size: 0.85rem; color: var(--duo-text-muted);">Toca el micrófono para hablar en francés</p>
+                <p id="speech-status" style="font-size: 0.85rem; color: var(--duo-text-muted);">${t('micToSpeakIn', { lang: getStudyLangName() })}</p>
 
                 <div class="speech-edit-container">
-                    <label class="speech-edit-label">Lo que escuchó el sistema (puedes editarlo):</label>
-                    <input type="text" id="user-speech-input" class="duo-input" placeholder="Haz clic en el mic o edita la respuesta aquí..." style="border-color: #ce93d8;" autocomplete="off">
+                    <label class="speech-edit-label">${t('whatSystemHeard')}</label>
+                    <input type="text" id="user-speech-input" class="duo-input" placeholder="${t('micOrEditPlaceholder')}" style="border-color: #ce93d8;" autocomplete="off">
                 </div>
 
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
@@ -422,16 +451,16 @@ export function renderExercise(item) {
     else if (item.type === 'grammar') {
         const prefilled = item.prefilled || {};
         container.innerHTML = `
-            ${wrapTitleWithBadge('Completa la tabla de conjugación')}
+            ${wrapTitleWithBadge(t('completeConjugationTable'))}
             <div class="instruction-box">
                 <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.data.verb.replace(/'/g, "\\'")}')">🔊</button>
                 <div>
-                    <p style="color: var(--duo-text-muted); margin:0;">Verbo: <strong>${item.data.verb}</strong> | Tiempo: <strong>${item.data.tense}</strong></p>
+                    <p style="color: var(--duo-text-muted); margin:0;">${t('verbLabel')}: <strong>${item.data.verb}</strong> | ${t('tenseLabel')}: <strong>${item.data.tense}</strong></p>
                 </div>
             </div>
             <div class="grammar-table-container">
                 <div class="grammar-header">
-                    <span style="font-weight: 800; color: #1899d6;">Pronombres Sujeto</span>
+                    <span style="font-weight: 800; color: #1899d6;">${t('subjectPronouns')}</span>
                     <span class="grammar-badge">${item.data.verb}</span>
                 </div>
                 <table class="conjugation-table">
@@ -563,7 +592,7 @@ function checkAnswer() {
         const cleanWord = cleanStr(currentItem.data.word);
 
         isCorrect = (cleanInput.length > 0 && (cleanInput.includes(cleanSym) || cleanInput.includes(cleanWord) || cleanSym.includes(cleanInput)));
-        correctSolutionText = `Fonema: "${currentItem.data.symbol}" | Ejemplo: "${currentItem.data.word}" (${currentItem.data.trans})`;
+        correctSolutionText = t('phonemeSolution', { symbol: currentItem.data.symbol, word: currentItem.data.word, trans: currentItem.data.trans });
         textToSpeak = currentItem.data.word;
     } else if (currentItem.type === 'speaking') {
         const val = document.getElementById('user-speech-input').value.trim();
@@ -720,7 +749,7 @@ function checkAnswer() {
         drawer.className = 'bottom-drawer correct';
         icon.textContent = '✓';
         title.textContent = t('excellent');
-        subtext.textContent = `Solución: ${correctSolutionText}`;
+        subtext.textContent = t('solutionLabel', { solution: correctSolutionText });
         actionBtn.textContent = t('continue');
         actionBtn.className = 'check-btn';
     } else {
@@ -752,7 +781,7 @@ function finishSession() {
             <div class="summary-icon">🎉</div>
             <h1 style="color: var(--duo-green-dark); margin-bottom: 10px;">${t('sessionCompleted')}</h1>
             <p style="font-size: 1.1rem; color: var(--duo-text-muted); margin-bottom: 20px;">
-                Completados los ejercicios con repaso inteligente (SRS).
+                ${t('sessionSummaryText')}
             </p>
             <div style="background: var(--duo-gray-light); padding: 15px; border-radius: 12px; margin-bottom: 25px; text-align: left;">
                 <p><strong>${t('sessionsCompleted')}</strong> ${sessionCount}</p>

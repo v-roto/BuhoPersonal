@@ -2,6 +2,7 @@
 
 import { t } from './i18n.js';
 import { CONTENT_CATEGORIES, buildDefaultContent, getLegacyIds, LEGACY_TOPIC_KEYS } from './content/index.js';
+import { openLevelsByCategory, isPracticeDue } from './levels.js';
 
 export function showToast(msg) {
     const area = document.getElementById('toast-area');
@@ -62,13 +63,24 @@ function migrateLegacyItems() {
 }
 
 function upgradeFromPack(item, packItem) {
+    let changed = false;
+    // Respuestas alternativas añadidas después: se copian si el ítem guardado no tiene las suyas
+    if (Array.isArray(packItem.alt) && !Array.isArray(item.alt)) { item.alt = [...packItem.alt]; changed = true; }
+    if (packItem.conjugations && item.conjugations) {
+        Object.keys(packItem.conjugations).forEach(k => {
+            const packForm = packItem.conjugations[k] || '';
+            if (packForm.includes('|') && item.conjugations[k] === packForm.split('|')[0]) { item.conjugations[k] = packForm; changed = true; }
+        });
+    }
     Object.keys(packItem).forEach(field => {
         const value = packItem[field];
         const isLocalized = value && typeof value === 'object' && !Array.isArray(value) && typeof value.es === 'string';
         if (isLocalized && typeof item[field] === 'string' && Object.values(value).includes(item[field])) {
             item[field] = value;
+            changed = true;
         }
     });
+    return changed;
 }
 
 // Añade el contenido por defecto del idioma que aún no esté en la base (incluye contenido nuevo por nivel)
@@ -80,7 +92,7 @@ export function ensureLangContent(lang) {
         const existing = new Map(db[cat].map(i => [i.id, i]));
         pack[cat].forEach(item => {
             if (existing.has(item.id)) {
-                upgradeFromPack(existing.get(item.id), item);
+                if (upgradeFromPack(existing.get(item.id), item)) changed = true;
                 if (!seeded.has(item.id)) { seeded.add(item.id); changed = true; }
             } else if (!seeded.has(item.id)) {
                 db[cat].push(item);
@@ -91,6 +103,15 @@ export function ensureLangContent(lang) {
     });
     db.seededIds = [...seeded];
     return changed;
+}
+
+// Regla de práctica de un idioma: (categoría, ítem) → ¿entra hoy? Los niveles abiertos de cada tipo
+// se calculan con todo el contenido del idioma (el progreso no depende del tema elegido).
+export function practiceFilter(lang, level) {
+    const byCat = {};
+    CONTENT_CATEGORIES.forEach(cat => { byCat[cat] = (db[cat] || []).filter(i => itemLang(i) === lang); });
+    const open = openLevelsByCategory(byCat, level);
+    return (cat, item) => itemLang(item) === lang && isPracticeDue(item, level, open[cat]);
 }
 
 export let sessionCount = parseInt(localStorage.getItem('duo_french_sessions_v5')) || 0;

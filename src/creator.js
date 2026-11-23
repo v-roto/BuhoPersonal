@@ -246,6 +246,7 @@ export function editItem(type, index) {
     if (type === 'vocab') {
         setVal('add-vocab-fr', item.fr);
         setVal('add-vocab-es', localizeTranslation(item.es));
+        setVal('add-vocab-alt', (item.alt || []).join(' | '));
         setVal('add-vocab-topic', topicLabel(item.topic));
         setVal('add-vocab-level', item.level || 'A1');
         if (item.img) setVal('add-vocab-emoji', item.img);
@@ -290,6 +291,7 @@ export function editItem(type, index) {
         setVal('add-order-title', localizeTranslation(item.title));
         setVal('add-order-sentence', item.sentence);
         setVal('add-order-extras', item.extras ? item.extras.join(', ') : '');
+        setVal('add-order-alt', (item.alt || []).join(' | '));
         setVal('add-order-topic', topicLabel(item.topic));
         setVal('add-order-level', item.level || 'A1');
         if (item.img) setVal('add-order-emoji', item.img);
@@ -300,13 +302,13 @@ export function editItem(type, index) {
 }
 
 const FORM_FIELDS = {
-    vocab: ['add-vocab-fr', 'add-vocab-es', 'add-vocab-emoji'],
+    vocab: ['add-vocab-fr', 'add-vocab-es', 'add-vocab-alt', 'add-vocab-emoji'],
     conversation: ['add-conv-context', 'add-conv-prompt', 'add-conv-prompt-tr', 'add-conv-answer', 'add-conv-wrong1', 'add-conv-wrong2', 'add-conv-emoji'],
     choice: ['add-choice-prompt', 'add-choice-answer', 'add-choice-wrong1', 'add-choice-wrong2'],
     phonemes: ['add-phoneme-symbol', 'add-phoneme-word', 'add-phoneme-trans', 'add-phoneme-emoji'],
     grammar: ['add-gram-verb', 'add-gram-tense', ...CONJUGATION_KEYS.map(k => `add-gram-${k}`)],
     fill: ['add-fill-title', 'add-fill-sentence', 'add-fill-answer', 'add-fill-emoji'],
-    order: ['add-order-title', 'add-order-sentence', 'add-order-extras', 'add-order-emoji']
+    order: ['add-order-title', 'add-order-sentence', 'add-order-extras', 'add-order-alt', 'add-order-emoji']
 };
 const DEFAULT_TOPICS = { conversation: 'conversation', choice: 'grammar' };
 const TOPIC_FIELDS = { vocab: 'add-vocab-topic', conversation: 'add-conv-topic', choice: 'add-choice-topic', phonemes: 'add-phoneme-topic', grammar: 'add-gram-topic', fill: 'add-fill-topic', order: 'add-order-topic' };
@@ -361,19 +363,25 @@ function applyIllustration(prefix, item, fallbackEmoji, done) {
     }
 }
 
+// "a | b|c" → ["a", "b", "c"] (respuestas alternativas escritas en el editor)
+function splitAlts(text) {
+    return String(text || '').split('|').map(a => a.trim()).filter(Boolean);
+}
+
 // --- Guardado por tipo ---
 export function addVocabItem() {
     const fr = val('add-vocab-fr');
     const es = val('add-vocab-es');
     if (!fr || !es) return showToast(t('completeVocabFields'));
     const level = val('add-vocab-level') || 'A1';
+    const alt = splitAlts(val('add-vocab-alt'));
     const existing = findEditing('vocab');
 
     if (existing) {
-        Object.assign(existing, { fr, es: keepLocalized(existing.es, es), topic: keepTopic(existing.topic, val('add-vocab-topic')), level });
+        Object.assign(existing, { fr, alt, es: keepLocalized(existing.es, es), topic: keepTopic(existing.topic, val('add-vocab-topic')), level });
         return applyIllustration('vocab', existing, '📘', () => finishEdit('vocab', 'vocabUpdated'));
     }
-    const item = newItem('v', { fr, es, topic: topicFromInput(val('add-vocab-topic')), level });
+    const item = newItem('v', { fr, alt, es, topic: topicFromInput(val('add-vocab-topic')), level });
     applyIllustration('vocab', item, '📘', () => {
         db.vocab.push(item);
         saveDB(renderCreatorLists, populateTopicDropdown);
@@ -498,13 +506,14 @@ export function addOrderItem() {
     const extrasRaw = val('add-order-extras');
     const extras = extrasRaw ? extrasRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
     const level = val('add-order-level') || 'A1';
+    const alt = splitAlts(val('add-order-alt'));
     const existing = findEditing('order');
 
     if (existing) {
-        Object.assign(existing, { title: keepLocalized(existing.title, title), sentence, extras, topic: keepTopic(existing.topic, val('add-order-topic')), level });
+        Object.assign(existing, { title: keepLocalized(existing.title, title), sentence, extras, alt, topic: keepTopic(existing.topic, val('add-order-topic')), level });
         return applyIllustration('order', existing, '🧩', () => finishEdit('order', 'orderUpdated'));
     }
-    const item = newItem('o', { title, sentence, extras, topic: topicFromInput(val('add-order-topic')), level });
+    const item = newItem('o', { title, sentence, extras, alt, topic: topicFromInput(val('add-order-topic')), level });
     applyIllustration('order', item, '🧩', () => {
         db.order.push(item);
         saveDB(renderCreatorLists, populateTopicDropdown);

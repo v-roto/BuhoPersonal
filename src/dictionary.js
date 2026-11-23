@@ -58,6 +58,11 @@ function translationValues(value) {
     return typeof value === 'object' ? Object.values(value) : [value];
 }
 
+// Palabras de un concepto en un idioma ("Coche|Auto|Carro" → ["Coche", "Auto", "Carro"])
+function conceptWords(concept, lang) {
+    return String(concept.words[lang] || '').split('|').map(w => w.trim()).filter(Boolean);
+}
+
 // --- 1. Búsqueda local ---
 function findLocal(text, fromStudy) {
     const lang = getStudyLang();
@@ -65,7 +70,7 @@ function findLocal(text, fromStudy) {
     const q = normalize(text);
 
     const vocab = db.vocab.find(v => itemLang(v) === lang && (fromStudy
-        ? normalize(v.fr) === q
+        ? [v.fr, ...(v.alt || [])].some(w => normalize(w) === q)
         : translationValues(v.es).some(tr => normalize(tr) === q)));
     if (vocab) return { studyText: vocab.fr, transText: localizeTranslation(vocab.es), img: vocab.img || '', existing: { type: 'vocab', id: vocab.id } };
 
@@ -75,16 +80,16 @@ function findLocal(text, fromStudy) {
     if (order) return { studyText: order.sentence, transText: localizeTranslation(order.title), img: order.img || '', existing: { type: 'order', id: order.id } };
 
     // Vocabulario incluido en la app (aunque el usuario lo haya borrado de su lista)
-    const concept = VOCAB_CONCEPTS.find(c => normalize(c.words[fromStudy ? lang : trLang]) === q);
+    const concept = VOCAB_CONCEPTS.find(c => conceptWords(c, fromStudy ? lang : trLang).some(w => normalize(w) === q));
     if (concept && concept.words[lang] && concept.words[trLang]) {
-        return { studyText: concept.words[lang], transText: concept.words[trLang], img: concept.img, existing: null };
+        return { studyText: conceptWords(concept, lang)[0], transText: conceptWords(concept, trLang)[0], img: concept.img, existing: null };
     }
     return null;
 }
 
 function conceptEmoji(studyText) {
     const lang = getStudyLang();
-    const concept = VOCAB_CONCEPTS.find(c => normalize(c.words[lang]) === normalize(studyText));
+    const concept = VOCAB_CONCEPTS.find(c => conceptWords(c, lang).some(w => normalize(w) === normalize(studyText)));
     return concept ? concept.img : '';
 }
 

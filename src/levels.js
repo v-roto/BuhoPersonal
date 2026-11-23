@@ -37,17 +37,72 @@ export function isItemDue(item) {
     return daysElapsed >= getRequiredDays(score);
 }
 
-// Filtra por nivel evitando huecos de conocimiento:
-// - siempre entran los ítems del nivel elegido;
-// - de niveles inferiores solo entran los ya practicados con bajo dominio (1-3) que toca repasar;
-// - los niveles superiores quedan fuera.
-export function matchesLevelAndSRS(item, selectedLevel) {
-    if (selectedLevel === 'all') return true;
-    const itemIdx = CEFR_LEVELS.indexOf(item.level || 'A1');
-    const selectedIdx = CEFR_LEVELS.indexOf(selectedLevel);
-    if (itemIdx === selectedIdx) return true;
+// Momento en que un ítem vuelve a tocar (las estrellas marcan el intervalo)
+export function nextDueDate(item) {
     const score = item.score || 0;
-    return itemIdx < selectedIdx && score > 0 && score < 4 && isItemDue(item);
+    if (score === 0) return Date.now();
+    return (item.lastAskedDate || 0) + getRequiredDays(score) * 24 * 60 * 60 * 1000;
+}
+
+function idxOf(level) {
+    const idx = CEFR_LEVELS.indexOf(normalizeLevel(level || 'A1'));
+    return idx < 0 ? 0 : idx;
+}
+
+// --- Subir de nivel por tipo de ejercicio ---
+// Cada tipo (vocabulario, conversación, opción múltiple…) puede abrir niveles superiores al actual
+// por su cuenta, uno a uno, cuando ya se domina lo anterior:
+// - vocabulario: cuando ya se vieron todas las palabras hasta ese nivel (al menos 1 ⭐);
+// - fonemas: cuando todos los fonemas hasta ese nivel tienen 4-5 ⭐;
+// - resto: cuando todos los ejercicios de ese tipo hasta ese nivel tienen 4-5 ⭐
+//   y son al menos MIN_MASTERED_TO_ADVANCE (sumando los niveles).
+export const MASTERED_SCORE = 4;
+export const MIN_MASTERED_TO_ADVANCE = 10;
+
+const ADVANCE_RULES = {
+    vocab: { isDone: (i) => (i.score || 0) > 0, min: 0 },
+    phonemes: { isDone: (i) => (i.score || 0) >= MASTERED_SCORE, min: 0 },
+    default: { isDone: (i) => (i.score || 0) >= MASTERED_SCORE, min: MIN_MASTERED_TO_ADVANCE }
+};
+
+// Nivel más alto abierto para un tipo (≥ nivel actual). `items`: los de ese tipo en el idioma de estudio.
+export function openLevelFor(category, items, selectedLevel) {
+    if (selectedLevel === 'all') return 'all';
+    const rule = ADVANCE_RULES[category] || ADVANCE_RULES.default;
+    let open = idxOf(selectedLevel);
+    for (;;) {
+        const upTo = items.filter(i => idxOf(i.level) <= open);
+        const done = upTo.filter(rule.isDone).length;
+        if (done < upTo.length || done < rule.min) break;
+        const higher = items.filter(i => idxOf(i.level) > open).map(i => idxOf(i.level));
+        if (!higher.length) break;
+        open = Math.min(...higher);
+    }
+    return CEFR_LEVELS[open];
+}
+
+// Niveles abiertos de todos los tipos: { vocab: 'B1', choice: 'A2', … }
+export function openLevelsByCategory(itemsByCategory, selectedLevel) {
+    const out = {};
+    Object.keys(itemsByCategory).forEach(cat => { out[cat] = openLevelFor(cat, itemsByCategory[cat], selectedLevel); });
+    return out;
+}
+
+// ¿Entra este ítem en la práctica ahora?
+// - Solo si toca repasarlo según sus estrellas (5 ⭐ = cada 90 días).
+// - Entran el nivel actual y todos los inferiores, y los superiores que su tipo ya abrió (openLevel).
+// - Lo ya empezado de un nivel superior se sigue repasando.
+export function isPracticeDue(item, selectedLevel, openLevel = selectedLevel) {
+    if (!isItemDue(item)) return false;
+    if (selectedLevel === 'all') return true;
+    const itemIdx = idxOf(item.level);
+    if (itemIdx <= Math.max(idxOf(selectedLevel), idxOf(openLevel))) return true;
+    return (item.score || 0) > 0;
+}
+
+// ¿Es de un nivel inferior al actual? (sirve para repartir la sesión entre nivel actual y repaso)
+export function isBelowLevel(item, selectedLevel) {
+    return selectedLevel !== 'all' && idxOf(item.level) < idxOf(selectedLevel);
 }
 
 // --- Niveles desbloqueados por idioma (se obtienen con el examen de nivel) ---

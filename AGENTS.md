@@ -53,9 +53,32 @@ Categorías de contenido (`CONTENT_CATEGORIES`): `vocab`, `conversation`, `choic
 - Formatos compactos (ver comentarios en cada archivo):
   - `choice`: `[nivel, enunciado, respuesta, "distractor|distractor"]`
   - `fillWrite`: `[nivel, "frase con ___ (infinitivo)", "respuesta|alternativa"]`
+  - `grammarRows`: `[nivel, verbo, tiempo, "6 formas separadas por |"]` (orden de `CONJUGATION_KEYS`)
+  - `phonemeRows`: `[nivel, símbolo, palabra, emoji, "traducción es|en|fr"]`
+  - `sentences.js` (`ORDER_SENTENCES`): frases de «ordenar palabras» compartidas por todos los idiomas, `[frase, "distractores|…"]`, sin puntuación.
+  - **Respuestas alternativas** (convención `|`, la primera es la principal que se muestra):
+    - vocabulario: `"Coche|Auto|Carro"` en `vocabulary.js` → `fr` + `alt` (solo la principal se usa como traducción);
+    - conjugación: `"suis allé|suis allée"` en `conjugations` (en `grammarRows`, `" / "` dentro de una persona);
+    - completar: `"vamos|iremos"`, y coma para varios huecos;
+    - ordenar: tercer elemento opcional en `sentences.js`, con exactamente las mismas palabras.
+    Las alternativas nuevas llegan a los datos guardados vía `upgradeFromPack` (`state.js`).
+  - Objetivo de contenido: **50 palabras de vocabulario por nivel** y **al menos 5 ejercicios de cada otro tipo por nivel e idioma**. Al añadir escenas o frases, comprueba que la `key` no exista ya (un id repetido se descarta en silencio).
   - Examen (`content/exam/<lang>.js`): `conj`, `mc`, `write`, `speak` (formato documentado en la cabecera de cada archivo). Cada banco tiene trampas propias de su idioma; no son traducciones entre sí.
 - Niveles válidos: `A1`, `A2`, `B1`, `B2`, `C1`. Temas: ver `TOPIC_KEYS` en `content/index.js`.
 - Para añadir un idioma de estudio, seguir los pasos del README.
+
+## Qué entra en una sesión de práctica
+
+Regla única en `levels.js` (`isPracticeDue`), usada por la práctica y por el contador de pendientes de Inicio:
+
+- **Las estrellas mandan:** un ítem solo entra si toca repasarlo (`isItemDue`: 0⭐ ya, 1⭐ 1 día, 2⭐ 4, 3⭐ 12, 4⭐ 30, 5⭐ 90). Nunca se rellena la sesión con ítems que no tocan.
+- **Niveles:** entran el nivel actual (el del examen) y todos los inferiores; nunca los superiores. La sesión reparte ~2/3 nivel actual y ~1/3 repaso de inferiores.
+- **Subir de nivel por tipo** (`openLevelFor` en `levels.js`): cada categoría abre el siguiente nivel por su cuenta, uno a uno:
+  - vocabulario: cuando todas las palabras hasta ese nivel se vieron (≥1⭐);
+  - fonemas: cuando todos hasta ese nivel tienen 4-5⭐;
+  - resto: cuando todos los de ese tipo hasta ese nivel tienen 4-5⭐ **y** son al menos `MIN_MASTERED_TO_ADVANCE` (10), sumando niveles.
+  Lo ya empezado de un nivel superior se sigue repasando. `practiceFilter(lang, level)` en `state.js` aplica todo esto (práctica e Inicio).
+- **Nada pendiente:** se muestra la ventana «todo al día» (`renderCaughtUp`) con la próxima fecha de repaso y la invitación a añadir contenido.
 
 ## Interfaz de ejercicios y examen
 

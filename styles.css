@@ -1226,6 +1226,14 @@ body.dark-mode .creator-tabs { background: #131f24; }
 .match-tile-audio { display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
 .match-tile-word { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .match-tile-center { text-align: center; }
+/* Pares: dos columnas iguales y todas las filas del mismo alto (el de la más alta) */
+.match-grid {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr;
+    gap: 10px 15px; margin-bottom: 20px;
+}
+.match-grid .match-tile { min-height: 58px; min-width: 0; }
+/* Palabras largas (p. ej. alemán): guion según el idioma si el navegador sabe; si no, se cortan sin salirse */
+.match-grid .match-tile span[lang] { min-width: 0; overflow-wrap: anywhere; hyphens: auto; }
 .match-tile.is-selected {
     border-color: var(--duo-blue); background: var(--duo-blue-light); color: var(--duo-text);
     box-shadow: 0 0 0 3px rgba(28, 176, 246, 0.45); transform: translateY(-2px);
@@ -1585,3 +1593,11 @@ body.dark-mode .duo-input.is-correct:focus, body.dark-mode .duo-input.is-correct
 
 /* Umbral de pronunciación en la práctica */
 .speech-threshold { font-size: 0.8rem; font-weight: 700; color: var(--duo-purple-text); margin-top: -8px; }
+
+/* --- Ventana «todo al día» (no queda nada que repasar) --- */
+.caught-up-card { max-width: 460px; }
+.caught-up-feed {
+    margin: 14px 0 18px; padding: 12px 14px; border-radius: 14px; font-weight: 700; text-align: left;
+    background: var(--duo-green-light); color: var(--duo-text);
+}
+.caught-up-card .summary-actions { display: flex; flex-direction: column; gap: 10px; }

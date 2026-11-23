@@ -22,7 +22,7 @@ export default {
           conjugations: { je: "have been working", tu: "have been working", il: "has been working", nous: "have been working", vous: "have been working", ils: "have been working" } },
         { id: "en_g6", verb: "To finish", tense: "Future perfect", topic: "verbs", level: "C1",
           conjugations: { je: "will have finished", tu: "will have finished", il: "will have finished", nous: "will have finished", vous: "will have finished", ils: "will have finished" } },
-        { id: "en_g7", verb: "To leave", tense: "Third conditional (would have)", topic: "verbs", level: "C2",
+        { id: "en_g7", verb: "To leave", tense: "Third conditional (would have)", topic: "verbs", level: "C1",
           conjugations: { je: "would have left", tu: "would have left", il: "would have left", nous: "would have left", vous: "would have left", ils: "would have left" } }
     ],
     fill: [
@@ -32,10 +32,56 @@ export default {
         { id: "en_f4", title: { es: "Completa con la forma verbal correcta", en: "Complete with the correct verb form", fr: "Complète avec la bonne forme verbale" }, sentence: "I ___ never been to Japan.", answer: "have", img: "🗾", topic: "phrases", level: "B1" },
         { id: "en_f5", title: { es: "Completa con la forma verbal correcta", en: "Complete with the correct verb form", fr: "Complète avec la bonne forme verbale" }, sentence: "If I ___ more time, I would travel more.", answer: "had", img: "✈️", topic: "phrases", level: "B2" },
         { id: "en_f6", title: { es: "Completa con la forma verbal correcta", en: "Complete with the correct verb form", fr: "Complète avec la bonne forme verbale" }, sentence: "Had I known, I ___ have come earlier.", answer: "would", img: "⏱️", topic: "phrases", level: "C1" },
-        { id: "en_f7", title: { es: "Completa con la palabra correcta", en: "Complete with the correct word", fr: "Complète avec le bon mot" }, sentence: "Seldom ___ we seen such a remarkable performance.", answer: "have", img: "🎭", topic: "phrases", level: "C2" }
+        { id: "en_f7", title: { es: "Completa con la palabra correcta", en: "Complete with the correct word", fr: "Complète avec le bon mot" }, sentence: "Seldom ___ we seen such a remarkable performance.", answer: "have", img: "🎭", topic: "phrases", level: "C1" }
     ],
     order: [
         { id: "en_o1", title: { es: "Traduce: «El gato come una manzana»", en: "Translate: \"The cat eats an apple\"", fr: "Traduis : « Le chat mange une pomme »" }, sentence: "The cat eats an apple", extras: ["dog", "red", "in"], topic: "syntax", level: "A1" },
         { id: "en_o2", title: { es: "Traduce: «Nosotros hablamos inglés»", en: "Translate: \"We speak English\"", fr: "Traduis : « Nous parlons anglais »" }, sentence: "We speak English", extras: ["Spanish", "are", "the"], topic: "syntax", level: "A1" }
+    ],
+    // Opción múltiple de 3 respuestas (A1 = primeras 2 semanas; cada nivel repasa el anterior)
+    choice: [
+        ["A1", "Hello, my name ___ Lucas.", "is", "are|have"],
+        ["A1", "I ___ from Mexico.", "am", "is|have"],
+        ["A1", "She ___ a teacher.", "is", "are|do"],
+        ["A1", "This is ___ apple.", "an", "a|two"],
+        ["A1", "— How are you?", "I'm fine, thanks.", "I'm fine, thank.|My name is Paul."],
+        ["A1", "They ___ students.", "are", "is|be"],
+        ["A2", "Yesterday I ___ a pizza.", "ate", "eat|eaten"],
+        ["A2", "Tomorrow we ___ visit the museum.", "are going to", "are go to|going to"],
+        ["A2", "Is this ___ car?", "your", "yours|you"],
+        ["A2", "Last Saturday they ___ a film.", "watched", "watch|watching"],
+        ["A2", "— What did you do at the weekend?", "I visited my friends.", "I visited my friends tomorrow.|I visit my friends tomorrow."],
+        ["A2", "She ___ English and French.", "speaks", "speak|speaking"],
+        ["B1", "When I was a child, I ___ in the countryside.", "lived", "live|have lived"],
+        ["B1", "I ___ never been to Italy.", "have", "has|am"],
+        ["B1", "Next year I ___ to Japan.", "will travel", "would travel|travelled"],
+        ["B1", "This book is ___ than the film.", "more interesting", "most interesting|interestinger"],
+        ["B1", "While I ___ dinner, the phone rang.", "was cooking", "cooked|am cooking"],
+        ["B1", "— Will you come to the party?", "Yes, I'll be there at eight.", "Yes, I'd be there yesterday.|Yes, I'm there at eight tomorrow."],
+        ["B2", "If I had more time, I ___ more.", "would read", "will read|read"],
+        ["B2", "This is the city ___ I was born.", "where", "which|who"],
+        ["B2", "I've been waiting ___ two hours.", "for", "since|during"],
+        ["B2", "The letter ___ yesterday.", "was sent", "sent|was send"],
+        ["B2", "He asked me if I ___ help him.", "could", "can|will can"],
+        ["B2", "— What would you do in my place?", "I'd accept the offer.", "I'll accept the offer.|I would accepted the offer."],
+        ["C1", "If you had called me, I ___ come.", "would have", "will have|would"],
+        ["C1", "She's used to ___ early.", "getting up", "get up|got up"],
+        ["C1", "I wish I ___ that earlier.", "had known", "knew|have known"],
+        ["C1", "By the time we arrived, they ___ left.", "had already", "have already|already"],
+        ["C1", "Not only ___ late, but he also forgot the tickets.", "was he", "he was|did he"],
+        ["C1", "Although it was late, we ___ working.", "kept", "keep|were keep"]
+    ],
+    // Escribir la forma del verbo entre paréntesis (se añaden a «Completar oración»)
+    fillWrite: [
+        ["A1", "I ___ (be) a student.", "am"],
+        ["A1", "She ___ (have) two cats.", "has"],
+        ["A2", "Yesterday I ___ (buy) some bread.", "bought"],
+        ["A2", "This morning we ___ (take) the bus.", "took"],
+        ["B1", "When I was a child, I ___ (live) in London.", "lived"],
+        ["B1", "I have ___ (write) three emails today.", "written"],
+        ["B2", "If I were rich, I ___ (travel) everywhere.", "would travel"],
+        ["B2", "The house was ___ (build) in 1990.", "built"],
+        ["C1", "If I had known, I ___ (come) earlier.", "would have come"],
+        ["C1", "She has ___ (choose) a difficult path.", "chosen"]
     ]
 };

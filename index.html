@@ -66,22 +66,6 @@
     <!-- Header Bar (solo en Práctica) -->
     <header>
         <div class="header-top-row">
-            <div class="topic-select-container">
-                <select id="topic-filter-select" class="duo-input duo-input-sm" onchange="changeTopicFilter()" aria-label="Tema">
-                    <option value="all">📚 Todos los Temas</option>
-                </select>
-            </div>
-            <div class="level-select-container">
-                <select id="level-filter-select" class="duo-input duo-input-sm" onchange="changeLevelFilter()" aria-label="Nivel">
-                    <option value="all">⭐ Todos los Niveles</option>
-                    <option value="A1">🟢 A1 - Principiante</option>
-                    <option value="A2">🟢 A2 - Elemental</option>
-                    <option value="B1">🔵 B1 - Intermedio</option>
-                    <option value="B2">🔵 B2 - Intermedio Alto</option>
-                    <option value="C1">🟣 C1 - Avanzado</option>
-                    <option value="C2">🟣 C2 - Maestría</option>
-                </select>
-            </div>
             <div class="progress-bar-container desktop-progress">
                 <div class="progress-bar-fill" id="progress-bar"></div>
             </div>
@@ -107,7 +91,13 @@
                     <h1 class="hero-learning"><span data-i18n="homeLearning">Estás aprendiendo</span> <span id="hero-lang-dropdown"></span></h1>
                     <p class="muted" id="home-subgreeting"></p>
                 </div>
-                <button class="action-btn hero-cta" data-i18n="btnStartPractice" onclick="switchView('practice')">🎮 Iniciar Sesión de Práctica</button>
+                <div class="hero-start">
+                    <label for="home-topic-select" class="hero-topic-label" data-i18n="practiceTopicLabel">Tema a practicar</label>
+                    <select id="home-topic-select" class="duo-input hero-topic-select" onchange="changeHomeTopicFilter()">
+                        <option value="all">📚 Todos los Temas</option>
+                    </select>
+                    <button class="action-btn hero-cta" data-i18n="btnStartPractice" onclick="switchView('practice')">🎮 Iniciar Sesión de Práctica</button>
+                </div>
             </div>
 
             <!-- Diccionario / traductor -->
@@ -125,8 +115,11 @@
                     </div>
                 </div>
                 <form class="dict-form" id="dict-form">
-                    <input type="text" id="dict-input" class="duo-input" maxlength="400" autocomplete="off" data-i18n-placeholder="dictPlaceholder" placeholder="Escribe una palabra o una frase…">
-                    <button type="submit" class="action-btn dict-btn" data-i18n="dictTranslate">Traducir</button>
+                    <textarea id="dict-input" class="duo-input dict-textarea" maxlength="400" rows="3" autocomplete="off" data-i18n-placeholder="dictPlaceholder" placeholder="Escribe una palabra o una frase…"></textarea>
+                    <div class="dict-form-bottom">
+                        <div id="dict-chars"></div>
+                        <button type="submit" class="action-btn dict-btn" data-i18n="dictTranslate">Traducir</button>
+                    </div>
                 </form>
                 <label class="dict-auto"><input type="checkbox" id="dict-auto" checked> <span data-i18n="dictAutoAdd">Añadir automáticamente a mis ejercicios</span></label>
                 <div id="dict-result" aria-live="polite"></div>
@@ -141,27 +134,24 @@
                 <div class="stat-tile"><span class="stat-value" id="home-stat-sessions">0</span><span class="stat-label" data-i18n="statSessions">Sesiones</span></div>
             </div>
 
-            <div class="creator-card">
+            <div class="creator-card level-current-card">
                 <h2 data-i18n="yourLevel">🎯 Tu nivel</h2>
-                <div class="level-card-header">
-                    <p class="muted card-hint" data-i18n="levelHintExam">Supera el examen para desbloquear niveles superiores. Puedes practicar cualquier nivel desbloqueado.</p>
-                    <button class="action-btn btn-secondary exam-open-btn" onclick="switchView('exam')" data-i18n="examOpenBtn">📝 Examen de nivel</button>
-                </div>
-                <div class="level-picker" id="home-level-picker"></div>
-            </div>
-
-            <div class="home-bottom-row">
-                <div class="creator-card">
-                    <h2 data-i18n="practiceTopicCard">📚 Tema de Práctica</h2>
-                    <div class="form-group" style="margin-top: 10px;">
-                        <label for="home-topic-select" data-i18n="practiceTopicLabel">Tema a practicar</label>
-                        <select id="home-topic-select" class="duo-input" onchange="changeHomeTopicFilter()">
-                            <option value="all">📚 Todos los Temas</option>
-                        </select>
+                <div class="level-current">
+                    <span class="level-current-icon" id="level-current-icon">🌱</span>
+                    <div class="level-current-info">
+                        <div class="level-current-title"><span class="level-current-code" id="level-current-code">A1</span> <span id="level-current-name"></span></div>
+                        <p class="muted" id="level-current-desc"></p>
+                        <div class="level-progress"><div class="level-progress-fill" id="level-current-fill"></div></div>
+                        <span class="level-progress-label" id="level-current-mastery"></span>
                     </div>
                 </div>
-                <button class="action-btn btn-secondary home-manage-btn" data-i18n="btnManageContent" onclick="switchView('creator')">➕ Administrar mi contenido</button>
+                <div class="level-current-exam">
+                    <p class="muted" data-i18n="levelExamHint">¿Crees que tu nivel es más alto? Haz el examen para subir de nivel.</p>
+                    <button class="action-btn btn-secondary exam-open-btn" onclick="switchView('exam')" data-i18n="examOpenBtn">📝 Examen de nivel</button>
+                </div>
             </div>
+
+            <button class="action-btn btn-secondary home-manage-btn" data-i18n="btnManageContent" onclick="switchView('creator')">➕ Administrar mi contenido</button>
         </section>
 
         <!-- PRACTICE VIEW -->
@@ -187,6 +177,7 @@
             <nav class="creator-tabs" role="tablist">
                 <button class="creator-tab" data-tab="vocab" onclick="switchCreatorTab('vocab')"><span data-i18n="tabVocab">📘 Vocabulario</span> <span class="tab-count">0</span></button>
                 <button class="creator-tab" data-tab="conversation" onclick="switchCreatorTab('conversation')"><span data-i18n="tabConversation">💬 Conversación</span> <span class="tab-count">0</span></button>
+                <button class="creator-tab" data-tab="choice" onclick="switchCreatorTab('choice')"><span data-i18n="tabChoice">🔘 Opción múltiple</span> <span class="tab-count">0</span></button>
                 <button class="creator-tab" data-tab="phonemes" onclick="switchCreatorTab('phonemes')"><span data-i18n="tabPhonemes">🗣️ Fonemas</span> <span class="tab-count">0</span></button>
                 <button class="creator-tab" data-tab="grammar" onclick="switchCreatorTab('grammar')"><span data-i18n="tabGrammar">📗 Gramática</span> <span class="tab-count">0</span></button>
                 <button class="creator-tab" data-tab="fill" onclick="switchCreatorTab('fill')"><span data-i18n="tabFill">✏️ Completar</span> <span class="tab-count">0</span></button>
@@ -216,7 +207,7 @@
                         <label for="add-vocab-level" data-i18n="levelCefr">Nivel CEFR</label>
                         <select id="add-vocab-level" class="duo-input level-select">
                             <option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option>
-                            <option value="B2">B2</option><option value="C1">C1</option><option value="C2">C2</option>
+                            <option value="B2">B2</option><option value="C1">C1</option>
                         </select>
                     </div>
                 </div>
@@ -279,7 +270,7 @@
                         <label for="add-conv-level" data-i18n="levelCefr">Nivel CEFR</label>
                         <select id="add-conv-level" class="duo-input level-select">
                             <option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option>
-                            <option value="B2">B2</option><option value="C1">C1</option><option value="C2">C2</option>
+                            <option value="B2">B2</option><option value="C1">C1</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -291,6 +282,47 @@
                 <button class="action-btn btn-muted" id="conv-cancel-btn" style="display:none;" onclick="cancelEdit('conversation')" data-i18n="cancelEdit">Cancelar Edición</button>
                 <h3 class="list-title" data-i18n="yourItems">Tus elementos</h3>
                 <div class="item-list" id="list-conversation"></div>
+            </div>
+
+            <!-- Opción múltiple (3 respuestas) -->
+            <div class="creator-card" data-creator-panel="choice" hidden>
+                <h2 id="choice-form-title" data-i18n="choiceCardTitle">🔘 Opción múltiple</h2>
+                <p class="muted card-hint" data-i18n="choiceHint">Escribe la frase con «___» en el hueco. Pon una respuesta incorrecta parecida a la correcta y otra claramente distinta.</p>
+                <div class="form-group">
+                    <label for="add-choice-prompt" data-i18n="choicePrompt">Frase o pregunta (usa ___ para el hueco)</label>
+                    <input type="text" id="add-choice-prompt" class="duo-input" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="add-choice-answer" data-i18n="convAnswer">Respuesta correcta</label>
+                    <input type="text" id="add-choice-answer" class="duo-input input-correct" autocomplete="off">
+                </div>
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label for="add-choice-wrong1" data-i18n="convWrong1">Respuesta incorrecta 1</label>
+                        <input type="text" id="add-choice-wrong1" class="duo-input input-wrong" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="add-choice-wrong2" data-i18n="choiceWrong2">Respuesta incorrecta 2</label>
+                        <input type="text" id="add-choice-wrong2" class="duo-input input-wrong" autocomplete="off">
+                    </div>
+                </div>
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label for="add-choice-topic" data-i18n="topicBlock">Tema / Bloque</label>
+                        <input type="text" id="add-choice-topic" class="duo-input topic-input" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="add-choice-level" data-i18n="levelCefr">Nivel CEFR</label>
+                        <select id="add-choice-level" class="duo-input level-select">
+                            <option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option>
+                            <option value="B2">B2</option><option value="C1">C1</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="action-btn" id="choice-submit-btn" onclick="addChoiceItem()" data-i18n="saveChoice">+ Guardar ejercicio</button>
+                <button class="action-btn btn-muted" id="choice-cancel-btn" style="display:none;" onclick="cancelEdit('choice')" data-i18n="cancelEdit">Cancelar Edición</button>
+                <h3 class="list-title" data-i18n="yourItems">Tus elementos</h3>
+                <div class="item-list" id="list-choice"></div>
             </div>
 
             <!-- 3. Phonemes Form -->
@@ -319,7 +351,7 @@
                         <label for="add-phoneme-level" data-i18n="levelCefr">Nivel CEFR</label>
                         <select id="add-phoneme-level" class="duo-input level-select">
                             <option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option>
-                            <option value="B2">B2</option><option value="C1">C1</option><option value="C2">C2</option>
+                            <option value="B2">B2</option><option value="C1">C1</option>
                         </select>
                     </div>
                 </div>
@@ -362,7 +394,7 @@
                         <label for="add-gram-level" data-i18n="levelCefr">Nivel CEFR</label>
                         <select id="add-gram-level" class="duo-input level-select">
                             <option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option>
-                            <option value="B2">B2</option><option value="C1">C1</option><option value="C2">C2</option>
+                            <option value="B2">B2</option><option value="C1">C1</option>
                         </select>
                     </div>
                 </div>
@@ -406,7 +438,7 @@
                         <label for="add-fill-level" data-i18n="levelCefr">Nivel CEFR</label>
                         <select id="add-fill-level" class="duo-input level-select">
                             <option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option>
-                            <option value="B2">B2</option><option value="C1">C1</option><option value="C2">C2</option>
+                            <option value="B2">B2</option><option value="C1">C1</option>
                         </select>
                     </div>
                 </div>
@@ -453,7 +485,7 @@
                         <label for="add-order-level" data-i18n="levelCefr">Nivel CEFR</label>
                         <select id="add-order-level" class="duo-input level-select">
                             <option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option>
-                            <option value="B2">B2</option><option value="C1">C1</option><option value="C2">C2</option>
+                            <option value="B2">B2</option><option value="C1">C1</option>
                         </select>
                     </div>
                 </div>

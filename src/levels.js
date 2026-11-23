@@ -1,8 +1,13 @@
-// --- Módulo de Niveles (CEFR A1-C2) y Prevención de Huecos de Conocimiento ---
+// --- Módulo de Niveles (CEFR A1-C1) y Prevención de Huecos de Conocimiento ---
 
-export const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+export const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1'];
 
-let currentLevelFilter = localStorage.getItem('buho_level_filter') || 'all';
+// El nivel C2 se retiró: los datos antiguos con C2 pasan a C1
+export function normalizeLevel(level) {
+    return level === 'C2' ? 'C1' : level;
+}
+
+let currentLevelFilter = normalizeLevel(localStorage.getItem('buho_level_filter') || 'all');
 
 export function getLevelFilter() {
     return currentLevelFilter;
@@ -71,13 +76,14 @@ export function migrateUnlockedLevels(currentLang) {
 
 export function getUnlockedLevel(lang) {
     const map = readUnlocked() || {};
-    return CEFR_LEVELS.includes(map[lang]) ? map[lang] : 'A1';
+    const level = normalizeLevel(map[lang]);
+    return CEFR_LEVELS.includes(level) ? level : 'A1';
 }
 
-// Nunca baja un nivel ya desbloqueado
-export function setUnlockedLevel(lang, level) {
+// Por defecto nunca baja un nivel ya conseguido; el examen lo fija tal cual (force)
+export function setUnlockedLevel(lang, level, { force = false } = {}) {
     const map = readUnlocked() || {};
-    if (levelIndex(level) >= levelIndex(map[lang])) map[lang] = level;
+    if (force || levelIndex(level) >= levelIndex(map[lang])) map[lang] = level;
     localStorage.setItem(UNLOCK_KEY, JSON.stringify(map));
 }
 

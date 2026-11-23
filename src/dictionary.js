@@ -11,6 +11,7 @@ import { t, getStudyLang, getTranslationLang, getLangName, localizeTranslation }
 import { flagSVG } from './flags.js';
 import { speakFrench } from './audio.js';
 import { renderLangDropdown } from './langDropdown.js';
+import { charBarHTML, attachCharBar, applyKeyboardHints } from './specialChars.js';
 import { STUDY_LANGS } from './content/index.js';
 
 const MAX_LENGTH = 400;
@@ -383,6 +384,13 @@ export function renderDictionaryChrome() {
     renderLangDropdown($('dict-from'), from);
     renderLangDropdown($('dict-to'), to);
     if ($('dict-from-caption')) $('dict-from-caption').textContent = from.caption;
+    // Teclas de acentos del idioma desde el que se escribe
+    const charsBox = $('dict-chars');
+    if (charsBox) {
+        charsBox.innerHTML = charBarHTML(from.value);
+        attachCharBar(charsBox.closest('.dict-card'));
+        applyKeyboardHints(charsBox.closest('.dict-card'), from.value);
+    }
     if ($('dict-to-caption')) $('dict-to-caption').textContent = to.caption;
     const auto = $('dict-auto');
     if (auto) auto.checked = isAutoAdd();
@@ -401,6 +409,9 @@ export function initDictionary(options = {}) {
     onPickStudyLang = options.onPickStudyLang || onPickStudyLang;
     onPickNativeLang = options.onPickNativeLang || onPickNativeLang;
     $('dict-form')?.addEventListener('submit', (e) => { e.preventDefault(); dictSearch(); });
+    $('dict-input')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); dictSearch(); }
+    });
     $('dict-swap')?.addEventListener('click', () => {
         direction = direction === 'toTr' ? 'toStudy' : 'toTr';
         localStorage.setItem(DIRECTION_KEY, direction);

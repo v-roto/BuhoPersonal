@@ -44,6 +44,7 @@ function migrateLegacyItems() {
     CONTENT_CATEGORIES.forEach(cat => {
         db[cat].forEach(item => {
             if (item.topic && LEGACY_TOPIC_KEYS[item.topic]) item.topic = LEGACY_TOPIC_KEYS[item.topic];
+            if (item.level === 'C2') item.level = 'C1';  // el nivel C2 se retiró
         });
     });
 }

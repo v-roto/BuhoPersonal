@@ -60,13 +60,13 @@ export const VOCAB_CONCEPTS = [
     { key: 'sustainable', img: '♻️', topic: 'society', level: 'C1', words: { es: 'Sostenible', en: 'Sustainable', fr: 'Durable', it: 'Sostenibile', de: 'Nachhaltig' } },
     { key: 'feasible', img: '🧩', topic: 'work', level: 'C1', words: { es: 'Viable', en: 'Feasible', fr: 'Faisable', it: 'Fattibile', de: 'Machbar' } },
 
-    // C2 — Maestría
-    { key: 'nuance', img: '🎨', topic: 'language', level: 'C2', words: { es: 'Matiz', en: 'Nuance', fr: 'Nuance', it: 'Sfumatura', de: 'Nuance' } },
-    { key: 'ephemeral', img: '⏳', topic: 'language', level: 'C2', words: { es: 'Efímero', en: 'Ephemeral', fr: 'Éphémère', it: 'Effimero', de: 'Vergänglich' } },
-    { key: 'serendipity', img: '🍀', topic: 'language', level: 'C2', words: { es: 'Serendipia', en: 'Serendipity', fr: 'Sérendipité', it: 'Serendipità', de: 'Glücklicher Zufall' } },
-    { key: 'undermine', img: '🧱', topic: 'society', level: 'C2', words: { es: 'Socavar', en: 'To undermine', fr: 'Saper', it: 'Minare', de: 'Untergraben' } },
-    { key: 'thorough', img: '🔎', topic: 'language', level: 'C2', words: { es: 'Minucioso', en: 'Thorough', fr: 'Minutieux', it: 'Accurato', de: 'Gründlich' } },
-    { key: 'ubiquitous', img: '🌐', topic: 'language', level: 'C2', words: { es: 'Omnipresente', en: 'Ubiquitous', fr: 'Omniprésent', it: 'Onnipresente', de: 'Allgegenwärtig' } },
-    { key: 'mitigate', img: '🛡️', topic: 'language', level: 'C2', words: { es: 'Mitigar', en: 'To mitigate', fr: 'Atténuer', it: 'Mitigare', de: 'Abmildern' } },
-    { key: 'cumbersome', img: '🐘', topic: 'language', level: 'C2', words: { es: 'Engorroso', en: 'Cumbersome', fr: 'Encombrant', it: 'Ingombrante', de: 'Umständlich' } }
+    // C1 (avanzado, antes C2)
+    { key: 'nuance', img: '🎨', topic: 'language', level: 'C1', words: { es: 'Matiz', en: 'Nuance', fr: 'Nuance', it: 'Sfumatura', de: 'Nuance' } },
+    { key: 'ephemeral', img: '⏳', topic: 'language', level: 'C1', words: { es: 'Efímero', en: 'Ephemeral', fr: 'Éphémère', it: 'Effimero', de: 'Vergänglich' } },
+    { key: 'serendipity', img: '🍀', topic: 'language', level: 'C1', words: { es: 'Serendipia', en: 'Serendipity', fr: 'Sérendipité', it: 'Serendipità', de: 'Glücklicher Zufall' } },
+    { key: 'undermine', img: '🧱', topic: 'society', level: 'C1', words: { es: 'Socavar', en: 'To undermine', fr: 'Saper', it: 'Minare', de: 'Untergraben' } },
+    { key: 'thorough', img: '🔎', topic: 'language', level: 'C1', words: { es: 'Minucioso', en: 'Thorough', fr: 'Minutieux', it: 'Accurato', de: 'Gründlich' } },
+    { key: 'ubiquitous', img: '🌐', topic: 'language', level: 'C1', words: { es: 'Omnipresente', en: 'Ubiquitous', fr: 'Omniprésent', it: 'Onnipresente', de: 'Allgegenwärtig' } },
+    { key: 'mitigate', img: '🛡️', topic: 'language', level: 'C1', words: { es: 'Mitigar', en: 'To mitigate', fr: 'Atténuer', it: 'Mitigare', de: 'Abmildern' } },
+    { key: 'cumbersome', img: '🐘', topic: 'language', level: 'C1', words: { es: 'Engorroso', en: 'Cumbersome', fr: 'Encombrant', it: 'Ingombrante', de: 'Umständlich' } }
 ];

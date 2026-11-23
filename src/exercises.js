@@ -2,6 +2,8 @@
 
 import { db, sessionCount, currentTopicFilter, saveDB, incrementSessionCount, itemLang } from './state.js';
 import { getPronouns } from './content/index.js';
+import { charBarHTML, attachCharBar, applyKeyboardHints } from './specialChars.js';
+import { speechPercent, normalizeSpoken } from './textCompare.js';
 import { speakFrench, toggleSpeechRecognition, playSound } from './audio.js';
 import { getLevelFilter, isItemDue, matchesLevelAndSRS, isLevelUnlocked } from './levels.js';
 import { t, getStudyLang, getStudyLangName, localize, localizeTranslation } from './i18n.js';
@@ -84,6 +86,24 @@ function renderMiniIllustrationHTML(item) {
     return item.img ? `<span class="mini-emoji">${escapeHTML(item.img)}</span>` : '';
 }
 
+const CHOICE_TYPES = ['conversation_choice', 'choice'];
+const PRACTICE_SPEAK_PERCENT = 91;   // pronunciación en práctica: más del 90 % de coincidencia
+
+// Respuestas de cada hueco: "a, b" = varios huecos; "x|y" = respuestas válidas para un mismo hueco
+function fillAnswerSlots(answer) {
+    return String(answer || '').split(/[,/]/).map(slot => slot.split('|').map(a => a.trim()).filter(Boolean));
+}
+
+// Quita las pistas entre paréntesis, p. ej. "Je ___ (être) étudiant." → "Je ___ étudiant."
+function withoutHints(text) {
+    return String(text || '').replace(/\s*\([^)]*\)/g, '');
+}
+
+// Igualdad estricta (con acentos) para avisar de errores de acentuación en la práctica
+function strictNorm(str) {
+    return (str || '').normalize('NFC').toLowerCase().replace(/[.,!?;:"'«»¿¡]/g, '').replace(/\s+/g, ' ').trim();
+}
+
 function getNormalizedFillParts(sentence) {
     let s = (sentence || "").trim();
     let endingPunct = "";
@@ -134,6 +154,13 @@ export function startNewSession() {
             }
         });
     }
+    if(db.choice) {
+        db.choice.forEach(item => {
+            if (matchesTopicAndLevel(item)) {
+                pool.push({ category: 'choice', type: 'choice', isSpeaking: false, data: item, score: item.score || 0 });
+            }
+        });
+    }
     if(db.grammar) {
         db.grammar.forEach(item => {
             if (matchesTopicAndLevel(item)) {
@@ -145,8 +172,8 @@ export function startNewSession() {
         db.fill.forEach(item => {
             if (matchesTopicAndLevel(item)) {
                 pool.push({ category: 'fill', type: 'fill', isSpeaking: false, data: item, score: item.score || 0 });
-                const norm = getNormalizedFillParts(item.sentence);
-                const answers = item.answer.split(/[,/]/).map(s => s.trim());
+                const norm = getNormalizedFillParts(withoutHints(item.sentence));
+                const answers = fillAnswerSlots(item.answer).map(slot => slot[0]);
                 let fullSentence = "";
                 norm.parts.forEach((p, idx) => {
                     fullSentence += p;
@@ -197,7 +224,7 @@ export function startNewSession() {
     let selectedTypes = new Set();
 
     for (let [type, items] of typesMap.entries()) {
-        if (selectedTypes.size < 7 && items.length > 0) {
+        if (selectedTypes.size < 8 && items.length > 0) {
             let item = items.shift();
             selected.push(item);
             selectedTypes.add(type);
@@ -362,6 +389,7 @@ export function renderExercise(item) {
                 <button class="speaker-btn hint-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${jsArg(item.data.fr)}')">${t('listenAudioHint')}</button>
             </div>
             <input type="text" id="user-input" class="duo-input" placeholder="${t('typeInFrench')}" autocomplete="off">
+            ${charBarHTML(getStudyLang())}
         `;
         setTimeout(() => speakFrench(item.data.fr), 400);
     } 
@@ -424,10 +452,12 @@ export function renderExercise(item) {
                     <button class="mic-btn" id="mic-trigger-btn" onclick="window.toggleSpeechRecognition()">🎤</button>
                 </div>
                 <p id="speech-status" class="speech-status">${escapeHTML(t('speakSymbolOrWord', { symbol: item.data.symbol, word: item.data.word }))}</p>
+                <p class="speech-threshold">🎯 ${t('practiceSpeakThreshold', { pct: PRACTICE_SPEAK_PERCENT - 1 })}</p>
 
                 <div class="speech-edit-container">
                     <label class="speech-edit-label">${t('whatSystemHeard')}</label>
                     <input type="text" id="user-speech-input" class="duo-input speech-input" placeholder="${t('micOrTypePlaceholder')}" autocomplete="off">
+                    ${charBarHTML(getStudyLang())}
                 </div>
 
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
@@ -450,10 +480,12 @@ export function renderExercise(item) {
                     <button class="mic-btn" id="mic-trigger-btn" onclick="window.toggleSpeechRecognition()">🎤</button>
                 </div>
                 <p id="speech-status" class="speech-status">${t('micToSpeakIn', { lang: getStudyLangName() })}</p>
+                <p class="speech-threshold">🎯 ${t('practiceSpeakThreshold', { pct: PRACTICE_SPEAK_PERCENT - 1 })}</p>
 
                 <div class="speech-edit-container">
                     <label class="speech-edit-label">${t('whatSystemHeard')}</label>
                     <input type="text" id="user-speech-input" class="duo-input speech-input" placeholder="${t('micOrEditPlaceholder')}" autocomplete="off">
+                    ${charBarHTML(getStudyLang())}
                 </div>
 
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
@@ -461,6 +493,27 @@ export function renderExercise(item) {
                     <button class="skip-btn skip-btn-purple" onclick="window.skipAllSpeakingExercises()">${t('skipAllSpeaking')}</button>
                 </div>
             </div>
+        `;
+    }
+    else if (item.type === 'choice') {
+        const ch = item.data;
+        if (!item.options) item.options = [ch.answer, ...(ch.wrong || [])].sort(() => Math.random() - 0.5);
+        const prompt = ch.prompt || '';
+        const title = !prompt ? t('examPickTitle') : prompt.startsWith('—') ? t('examReplyTitle') : t('examGapTitle');
+        const quote = prompt.replace(/^—\s*/, '').replace('___', '_____');
+        container.innerHTML = `
+            ${wrapTitleWithBadge(title)}
+            ${quote ? `<div class="exam-quote"><span class="exam-quote-text">${escapeHTML(quote)}</span>
+                <button class="speaker-btn speaker-btn-sm" onmousedown="event.preventDefault()" onclick="window.speakFrench('${jsArg(quote.replace('_____', '…'))}')">🔊</button></div>` : ''}
+            <div class="choice-list">
+                ${item.options.map((opt, idx) => `
+                    <button class="choice-btn" id="choice-${idx}" onclick="window.selectChoice(${idx})">
+                        <span class="choice-key">${idx + 1}</span>
+                        <span class="choice-text">${escapeHTML(opt)}</span>
+                    </button>
+                `).join('')}
+            </div>
+            <p class="keyboard-hint">${t('keyboardHint')}</p>
         `;
     }
     else if (item.type === 'conversation_choice') {
@@ -517,7 +570,7 @@ export function renderExercise(item) {
                     <span class="grammar-badge">${escapeHTML(item.data.verb)}</span>
                 </div>
                 <table class="conjugation-table">
-                    <tr><td class="pronoun-cell">${pronouns.je}</td><td><input type="text" id="gram-je" class="duo-input" value="${prefilled.je || ''}" ${prefilled.je ? 'disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
+                    <tr><td class="pronoun-cell">${pronouns.je}</td><td><input type="text" id="gram-je" class="duo-input ${prefilled.je ? 'is-correct' : ''}" value="${prefilled.je || ''}" ${prefilled.je ? 'disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
                     <tr><td class="pronoun-cell">${pronouns.tu}</td><td><input type="text" id="gram-tu" class="duo-input ${prefilled.tu ? 'is-correct' : ''}" value="${prefilled.tu || ''}" ${prefilled.tu ? 'disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
                     <tr><td class="pronoun-cell">${pronouns.il}</td><td><input type="text" id="gram-il" class="duo-input ${prefilled.il ? 'is-correct' : ''}" value="${prefilled.il || ''}" ${prefilled.il ? 'disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
                     <tr><td class="pronoun-cell">${pronouns.nous}</td><td><input type="text" id="gram-nous" class="duo-input ${prefilled.nous ? 'is-correct' : ''}" value="${prefilled.nous || ''}" ${prefilled.nous ? 'disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
@@ -525,6 +578,7 @@ export function renderExercise(item) {
                     <tr><td class="pronoun-cell">${pronouns.ils}</td><td><input type="text" id="gram-ils" class="duo-input ${prefilled.ils ? 'is-correct' : ''}" value="${prefilled.ils || ''}" ${prefilled.ils ? 'disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
                 </table>
             </div>
+            ${charBarHTML(getStudyLang())}
         `;
     }
     else if (item.type === 'fill') {
@@ -546,6 +600,7 @@ export function renderExercise(item) {
             <div class="fill-blank-sentence">
                 ${sentenceHTML}
             </div>
+            ${charBarHTML(getStudyLang())}
         `;
     }
     else if (item.type === 'order') {
@@ -568,6 +623,11 @@ export function renderExercise(item) {
         `;
     }
     
+    if (container.querySelector('input[type="text"]')) {
+        applyKeyboardHints(container, getStudyLang());
+        attachCharBar(container);
+    }
+
     if (!item.isSpeaking && item.type !== 'order') {
         setTimeout(() => {
             const firstInput = document.querySelector('#view-practice input[type="text"]:not([disabled])');
@@ -579,7 +639,7 @@ export function renderExercise(item) {
 }
 
 export function selectChoice(idx) {
-    if (isChecked || !currentItem || currentItem.type !== 'conversation_choice') return;
+    if (isChecked || !currentItem || !CHOICE_TYPES.includes(currentItem.type)) return;
     if (!questionStartTime) questionStartTime = Date.now();
     selectedChoice = idx;
     document.querySelectorAll('.choice-btn').forEach((btn, i) => btn.classList.toggle('selected', i === idx));
@@ -596,7 +656,7 @@ export function toggleChatTranslation() {
 
 // Teclas 1-9 para elegir respuesta en conversaciones
 document.addEventListener('keydown', (e) => {
-    if (!currentItem || currentItem.type !== 'conversation_choice' || isChecked) return;
+    if (!currentItem || !CHOICE_TYPES.includes(currentItem.type) || isChecked) return;
     const practiceView = document.getElementById('view-practice');
     if (!practiceView || !practiceView.classList.contains('active')) return;
     const n = parseInt(e.key, 10);
@@ -705,9 +765,11 @@ function checkAnswer() {
     let textToSpeak = '';
     const elapsedSec = questionStartTime ? (Date.now() - questionStartTime) / 1000 : 0;
 
+    let accentNote = '';
     if (currentItem.type === 'vocab_type') {
         const val = document.getElementById('user-input').value.trim();
         isCorrect = (cleanStr(val) === cleanStr(currentItem.data.fr));
+        if (isCorrect && strictNorm(val) !== strictNorm(currentItem.data.fr)) accentNote = currentItem.data.fr;
         correctSolutionText = `${currentItem.data.fr} = ${localizeTranslation(currentItem.data.es)}`;
         textToSpeak = currentItem.data.fr;
     } else if (currentItem.type === 'phoneme_speak') {
@@ -716,16 +778,17 @@ function checkAnswer() {
         const cleanSym = cleanStr(currentItem.data.symbol);
         const cleanWord = cleanStr(currentItem.data.word);
 
-        isCorrect = (cleanInput.length > 0 && (cleanInput.includes(cleanSym) || cleanInput.includes(cleanWord) || cleanSym.includes(cleanInput)));
+        const heardWords = normalizeSpoken(val).split(' ');
+        const bestPct = Math.max(speechPercent(currentItem.data.word, val), speechPercent(currentItem.data.symbol, val));
+        isCorrect = cleanInput.length > 0 && (heardWords.includes(normalizeSpoken(currentItem.data.word)) || bestPct >= PRACTICE_SPEAK_PERCENT);
+        void cleanSym; void cleanWord;
         correctSolutionText = t('phonemeSolution', { symbol: currentItem.data.symbol, word: currentItem.data.word, trans: localizeTranslation(currentItem.data.trans) });
         textToSpeak = currentItem.data.word;
     } else if (currentItem.type === 'speaking') {
         const val = document.getElementById('user-speech-input').value.trim();
-        const cleanTarget = cleanStr(currentItem.targetText);
-        const cleanInput = cleanStr(val);
-        
-        isCorrect = (cleanInput.length > 0 && (cleanTarget === cleanInput || cleanInput.includes(cleanTarget) || cleanTarget.includes(cleanInput)));
-        correctSolutionText = currentItem.targetText;
+        const pct = val ? speechPercent(currentItem.targetText, val) : 0;
+        isCorrect = pct >= PRACTICE_SPEAK_PERCENT;
+        correctSolutionText = `${currentItem.targetText} · ${t('examSpeakScore', { pct })}`;
         textToSpeak = currentItem.targetText;
     } else if (currentItem.type === 'grammar') {
         const c = currentItem.data.conjugations;
@@ -739,14 +802,8 @@ function checkAnswer() {
             vous: document.getElementById('gram-vous'),
             ils: document.getElementById('gram-ils')
         };
-        const userVals = {
-            je: inputs.je.value.trim(),
-            tu: inputs.tu.value.trim(),
-            il: inputs.il.value.trim(),
-            nous: inputs.nous.value.trim(),
-            vous: inputs.vous.value.trim(),
-            ils: inputs.ils.value.trim()
-        };
+        const userVals = {};
+        Object.keys(inputs).forEach(k => { userVals[k] = inputs[k].value.trim(); });
 
         let allGrammarCorrect = true;
         let incorrectConjugations = [];
@@ -778,29 +835,31 @@ function checkAnswer() {
             : currentItem.data.verb;
     } else if (currentItem.type === 'fill') {
         const fillInputs = document.querySelectorAll('.fill-blank-input');
-        const answers = currentItem.data.answer.split(/[,/]/).map(a => cleanStr(a));
+        const slots = fillAnswerSlots(currentItem.data.answer);
         let allCorrect = true;
+        const accentFixes = [];
 
         if (fillInputs.length > 0) {
             fillInputs.forEach((inp, idx) => {
-                const expected = answers[idx] || answers[0] || '';
-                const ok = cleanStr(inp.value) === expected;
-                inp.classList.toggle('is-correct', ok);
-                inp.classList.toggle('is-wrong', !ok);
-                if (!ok) allCorrect = false;
+                const valid = slots[idx] || slots[0] || [''];
+                const match = valid.find(a => cleanStr(inp.value) === cleanStr(a));
+                inp.classList.toggle('is-correct', !!match);
+                inp.classList.toggle('is-wrong', !match);
+                if (!match) allCorrect = false;
+                else if (!valid.some(a => strictNorm(a) === strictNorm(inp.value))) accentFixes.push(match);
             });
         }
         isCorrect = allCorrect;
-        correctSolutionText = currentItem.data.answer;
+        if (isCorrect && accentFixes.length) accentNote = accentFixes.join(', ');
+        correctSolutionText = slots.map(slot => slot.join(' / ')).join(', ');
 
-        const norm = getNormalizedFillParts(currentItem.data.sentence);
+        const norm = getNormalizedFillParts(withoutHints(currentItem.data.sentence));
         let spokenSentence = "";
         norm.parts.forEach((p, idx) => {
             spokenSentence += p;
-            if (idx < fillInputs.length && fillInputs[idx] && fillInputs[idx].value) {
-                spokenSentence += fillInputs[idx].value;
-            } else if (idx < answers.length) {
-                spokenSentence += (currentItem.data.answer.split(/[,/]/)[idx] || currentItem.data.answer.split(/[,/]/)[0] || '');
+            if (idx < norm.parts.length - 1) {
+                const typed = fillInputs[idx] && fillInputs[idx].value;
+                spokenSentence += isCorrect && typed ? typed : ((slots[idx] || slots[0] || [''])[0]);
             }
         });
         textToSpeak = (spokenSentence + norm.punct).trim();
@@ -809,6 +868,18 @@ function checkAnswer() {
         isCorrect = (cleanStr(userSentence) === cleanStr(currentItem.data.sentence));
         correctSolutionText = currentItem.data.sentence;
         textToSpeak = currentItem.data.sentence;
+    } else if (currentItem.type === 'choice') {
+        if (selectedChoice === null) return;
+        isCorrect = currentItem.options[selectedChoice] === currentItem.data.answer;
+        correctSolutionText = currentItem.data.answer;
+        textToSpeak = (currentItem.data.prompt || '').includes('___')
+            ? currentItem.data.prompt.replace(/^—\s*/, '').replace('___', currentItem.data.answer)
+            : currentItem.data.answer;
+        document.querySelectorAll('.choice-btn').forEach((btn, i) => {
+            btn.disabled = true;
+            if (currentItem.options[i] === currentItem.data.answer) btn.classList.add('correct');
+            else if (i === selectedChoice) btn.classList.add('incorrect');
+        });
     } else if (currentItem.type === 'conversation_choice') {
         if (selectedChoice === null) return;
         const chosen = currentItem.options[selectedChoice];
@@ -839,7 +910,7 @@ function checkAnswer() {
         } else {
             const isGrammar = (currentItem.type === 'grammar');
             const isPronunciation = (currentItem.type === 'speaking' || currentItem.type === 'phoneme_speak');
-            const isConversation = (currentItem.type === 'conversation_choice');
+            const isConversation = CHOICE_TYPES.includes(currentItem.type);
             const fastLimit = isGrammar ? 35 : (isPronunciation || isConversation ? 20 : 10);
             const slowLimit = isGrammar ? 50 : (isPronunciation || isConversation ? 30 : 15);
 
@@ -890,7 +961,8 @@ function checkAnswer() {
         drawer.className = 'bottom-drawer correct';
         icon.textContent = '✓';
         title.textContent = t('excellent');
-        subtext.textContent = t('solutionLabel', { solution: correctSolutionText });
+        subtext.textContent = t('solutionLabel', { solution: correctSolutionText })
+            + (accentNote ? ` · ⚠️ ${t('accentWarning', { word: accentNote })}` : '');
         actionBtn.textContent = t('continue');
         actionBtn.className = 'check-btn';
     } else {

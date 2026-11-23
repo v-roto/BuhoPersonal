@@ -6,8 +6,8 @@ const hadStoredData = !!localStorage.getItem('duo_french_db_v5');
 import { startNewSession, handleDrawerAction } from './exercises.js';
 import { renderCreatorLists, populateTopicDropdown, updateCreatorExamples, initCreatorView } from './creator.js';
 import { updateHeaderStats, initLocalFileHandle, connectLocalFile, reconnectLocalFile, openAndConnectLocalFile, setTopicFilter, ensureLangContent, saveDB } from './state.js';
-import { getLevelFilter, setLevelFilter, getUnlockedLevel, setUnlockedLevel, isLevelUnlocked, migrateUnlockedLevels } from './levels.js';
-import { initExam, showExamIntro } from './exam.js';
+import { setLevelFilter, getUnlockedLevel, setUnlockedLevel, migrateUnlockedLevels } from './levels.js';
+import { initExam, showExamIntro, leaveExam } from './exam.js';
 import { setUiLang, getUiLang, setStudyLang, getStudyLang, getTheme, setTheme, applyTheme, applyTranslationsToDOM } from './i18n.js';
 import { populateBrowserVoices } from './audio.js';
 import { flagSVG } from './flags.js';
@@ -21,6 +21,7 @@ function isPracticeActive() {
 }
 
 window.switchView = function(view) {
+    if (currentView === 'exam' && view !== 'exam') leaveExam();
     currentView = view;
     document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
 
@@ -44,6 +45,7 @@ window.switchView = function(view) {
     } else if (view === 'practice') {
         document.getElementById('view-practice').classList.add('active');
         drawer.style.display = 'flex';
+        syncLevel();
         startNewSession();
     } else {
         document.getElementById('view-creator').classList.add('active');
@@ -56,18 +58,12 @@ window.switchView = function(view) {
 };
 
 // --- Tema ---
+// El tema se elige en Inicio, antes de empezar la sesión
 function applyTopic(val) {
     setTopicFilter(val);
-    ['topic-filter-select', 'home-topic-select'].forEach(id => {
-        const sel = document.getElementById(id);
-        if (sel) sel.value = val;
-    });
+    const sel = document.getElementById('home-topic-select');
+    if (sel) sel.value = val;
 }
-
-window.changeTopicFilter = function() {
-    applyTopic(document.getElementById('topic-filter-select').value);
-    startNewSession();
-};
 
 window.changeHomeTopicFilter = function() {
     applyTopic(document.getElementById('home-topic-select').value);
@@ -75,28 +71,10 @@ window.changeHomeTopicFilter = function() {
 };
 
 // --- Nivel ---
-function applyLevel(level) {
-    setLevelFilter(level);
-    syncLevelSelect();
+// El nivel no se elige: siempre es el nivel actual del idioma (el que acredita el examen)
+function syncLevel() {
+    setLevelFilter(getUnlockedLevel(getStudyLang()));
 }
-
-// Selector de nivel de Práctica: los niveles bloqueados no se pueden elegir
-function syncLevelSelect() {
-    const lang = getStudyLang();
-    // Si el nivel elegido está bloqueado en este idioma, se usa el máximo desbloqueado
-    if (!isLevelUnlocked(getLevelFilter(), lang)) setLevelFilter(getUnlockedLevel(lang));
-    const headerLvl = document.getElementById('level-filter-select');
-    if (!headerLvl) return;
-    headerLvl.querySelectorAll('option').forEach(opt => {
-        opt.disabled = !isLevelUnlocked(opt.value, lang);
-    });
-    headerLvl.value = getLevelFilter();
-}
-
-window.changeLevelFilter = function() {
-    applyLevel(document.getElementById('level-filter-select').value);
-    startNewSession();
-};
 
 // --- Idioma de interfaz ---
 const UI_LANG_CYCLE = ['es', 'en', 'fr'];
@@ -128,7 +106,7 @@ function applyStudyLangContent() {
     if (ensureLangContent(getStudyLang())) saveDB();
     populateTopicDropdown();
     // Si el tema elegido no existe en este idioma, el selector vuelve a "todos"
-    const topicSelect = document.getElementById('home-topic-select') || document.getElementById('topic-filter-select');
+    const topicSelect = document.getElementById('home-topic-select');
     if (topicSelect) applyTopic(topicSelect.value);
     updateCreatorExamples();
     renderCreatorLists();
@@ -143,12 +121,9 @@ function applyStudyLang(lang) {
 }
 
 function refreshHome() {
-    syncLevelSelect();
+    syncLevel();
     renderDictionaryChrome();
-    renderHome({
-        onPickLang: applyStudyLang,
-        onPickLevel: (level) => { applyLevel(level); refreshHome(); }
-    });
+    renderHome({ onPickLang: applyStudyLang });
 }
 
 window.toggleThemeSwitch = function() {
@@ -169,7 +144,7 @@ function showOnboarding(step) {
         },
         onStartA1: () => {
             setUnlockedLevel(getStudyLang(), 'A1');
-            applyLevel('A1');
+            syncLevel();
             markOnboarded();
             closeOnboarding();
             window.switchView('home');
@@ -198,7 +173,7 @@ function initApp() {
     updateHeaderStats();
     applyStudyLangContent();
     migrateUnlockedLevels(getStudyLang());
-    syncLevelSelect();
+    syncLevel();
 
     updateLangButton();
 

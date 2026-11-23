@@ -124,9 +124,9 @@ export const CONVERSATION_SCENES = [
         }
     },
 
-    // C2
+    // C1 (antes C2)
     {
-        key: 'irony', img: '🎭', level: 'C2',
+        key: 'irony', img: '🎭', level: 'C1',
         context: { es: 'Alguien comenta con ironía tras una reunión interminable.', en: 'Someone makes an ironic remark after an endless meeting.', fr: 'Quelqu’un fait une remarque ironique après une réunion interminable.' },
         lines: {
             es: { prompt: 'Bueno, ha sido una reunión de lo más breve, ¿no?', answer: 'Desde luego, se me ha pasado volando: casi tres horas.', wrong: ['Sí, la reunión empieza a las nueve.', 'Todavía no tengo hambre.'] },
@@ -137,7 +137,7 @@ export const CONVERSATION_SCENES = [
         }
     },
     {
-        key: 'nuance', img: '🧐', level: 'C2',
+        key: 'nuance', img: '🧐', level: 'C1',
         context: { es: 'Debatís un tema delicado y te piden que matices tu postura.', en: "You're debating a sensitive topic and are asked to qualify your view.", fr: 'Vous débattez d’un sujet délicat et on te demande de nuancer ta position.' },
         lines: {
             es: { prompt: 'Entonces, ¿estás totalmente en contra de la propuesta?', answer: 'No exactamente; comparto el fondo, pero discrepo en la forma de llevarla a cabo.', wrong: ['Sí, la propuesta llegó por correo.', 'Estoy en contra de la lluvia.'] },
@@ -205,7 +205,7 @@ export const CONVERSATION_SCENES = [
         }
     },
     {
-        key: 'idiom', img: '🧵', level: 'C2',
+        key: 'idiom', img: '🧵', level: 'C1',
         context: { es: 'Comentas con un colega cómo terminó un proyecto complicado.', en: "You're discussing with a colleague how a tricky project ended.", fr: "Tu discutes avec un collègue de la fin d'un projet compliqué." },
         lines: {
             es: { prompt: 'Parece que al final todo salió a pedir de boca, ¿no?', answer: 'Sí, aunque hubo momentos en que pendía de un hilo.', wrong: ['Sí, me duele un poco la boca.', 'No, el hilo es demasiado corto.'] },

@@ -17,6 +17,7 @@ let editingItemType = null;
 const FORMS = {
     vocab: { prefix: 'vocab', title: 'vocabCardTitle', editTitle: 'editVocabTitle', save: 'savedVocab', update: 'updateVocab' },
     conversation: { prefix: 'conv', title: 'conversationCardTitle', editTitle: 'editConversationTitle', save: 'saveConversation', update: 'updateConversation' },
+    choice: { prefix: 'choice', title: 'choiceCardTitle', editTitle: 'editChoiceTitle', save: 'saveChoice', update: 'updateChoice' },
     phonemes: { prefix: 'phoneme', title: 'phonemesCardTitle', editTitle: 'editPhonemeTitle', save: 'savePhoneme', update: 'updatePhoneme' },
     grammar: { prefix: 'grammar', title: 'grammarCardTitle', editTitle: 'editGrammarTitle', save: 'saveGrammar', update: 'updateGrammar' },
     fill: { prefix: 'fill', title: 'fillCardTitle', editTitle: 'editFillTitle', save: 'saveSentence', update: 'updateFill' },
@@ -109,6 +110,11 @@ export function updateCreatorExamples() {
     ph('add-conv-wrong2', ex.convWrong[1]);
     ph('add-conv-emoji', ex.convEmoji);
 
+    ph('add-choice-prompt', ex.choicePrompt);
+    ph('add-choice-answer', ex.choiceAnswer);
+    ph('add-choice-wrong1', (ex.choiceWrong || [])[0]);
+    ph('add-choice-wrong2', (ex.choiceWrong || [])[1]);
+
     ph('add-phoneme-symbol', ex.phonemeSymbol);
     ph('add-phoneme-word', ex.phonemeWord);
     ph('add-phoneme-trans', localizeTranslation(ex.phonemeTrans));
@@ -148,13 +154,14 @@ function chip(type, idx, item, icon, mainHTML) {
 const CHIP_RENDERERS = {
     vocab: (item) => [item.img || '🖼️', `<strong>${escapeHTML(item.fr)}</strong> <span class="chip-muted">(${escapeHTML(localizeTranslation(item.es))})</span>`],
     conversation: (item) => [item.img || '💬', `<strong>${escapeHTML(item.prompt)}</strong> <span class="chip-muted">→ ${escapeHTML(item.answer)}</span>`],
+    choice: (item) => ['🔘', `<strong>${escapeHTML(item.prompt || '…')}</strong> <span class="chip-muted">→ ${escapeHTML(item.answer)}</span>`],
     phonemes: (item) => ['🗣️', `<strong>[${escapeHTML(item.symbol)}]</strong> ${escapeHTML(item.word)}`],
     grammar: (item) => ['📗', `${t('verbLabel')}: <strong>${escapeHTML(item.verb)}</strong> <span class="chip-muted">${escapeHTML(item.tense)}</span>`],
     fill: (item) => ['✏️', `<strong>${escapeHTML(item.sentence)}</strong>`],
     order: (item) => ['🧩', `<strong>${escapeHTML(item.sentence)}</strong>`]
 };
 
-const LIST_IDS = { vocab: 'list-vocab', conversation: 'list-conversation', phonemes: 'list-phonemes', grammar: 'list-grammar', fill: 'list-fill', order: 'list-order' };
+const LIST_IDS = { vocab: 'list-vocab', conversation: 'list-conversation', choice: 'list-choice', phonemes: 'list-phonemes', grammar: 'list-grammar', fill: 'list-fill', order: 'list-order' };
 
 export function renderCreatorLists() {
     CONTENT_CATEGORIES.forEach(type => {
@@ -252,6 +259,13 @@ export function editItem(type, index) {
         setVal('add-conv-topic', topicLabel(item.topic));
         setVal('add-conv-level', item.level || 'A1');
         setVal('add-conv-emoji', item.img);
+    } else if (type === 'choice') {
+        setVal('add-choice-prompt', item.prompt);
+        setVal('add-choice-answer', item.answer);
+        setVal('add-choice-wrong1', (item.wrong || [])[0]);
+        setVal('add-choice-wrong2', (item.wrong || [])[1]);
+        setVal('add-choice-topic', topicLabel(item.topic));
+        setVal('add-choice-level', item.level || 'A1');
     } else if (type === 'phonemes') {
         setVal('add-phoneme-symbol', item.symbol);
         setVal('add-phoneme-word', item.word);
@@ -288,13 +302,14 @@ export function editItem(type, index) {
 const FORM_FIELDS = {
     vocab: ['add-vocab-fr', 'add-vocab-es', 'add-vocab-emoji'],
     conversation: ['add-conv-context', 'add-conv-prompt', 'add-conv-prompt-tr', 'add-conv-answer', 'add-conv-wrong1', 'add-conv-wrong2', 'add-conv-emoji'],
+    choice: ['add-choice-prompt', 'add-choice-answer', 'add-choice-wrong1', 'add-choice-wrong2'],
     phonemes: ['add-phoneme-symbol', 'add-phoneme-word', 'add-phoneme-trans', 'add-phoneme-emoji'],
     grammar: ['add-gram-verb', 'add-gram-tense', ...CONJUGATION_KEYS.map(k => `add-gram-${k}`)],
     fill: ['add-fill-title', 'add-fill-sentence', 'add-fill-answer', 'add-fill-emoji'],
     order: ['add-order-title', 'add-order-sentence', 'add-order-extras', 'add-order-emoji']
 };
-const DEFAULT_TOPICS = { conversation: 'conversation' };
-const TOPIC_FIELDS = { vocab: 'add-vocab-topic', conversation: 'add-conv-topic', phonemes: 'add-phoneme-topic', grammar: 'add-gram-topic', fill: 'add-fill-topic', order: 'add-order-topic' };
+const DEFAULT_TOPICS = { conversation: 'conversation', choice: 'grammar' };
+const TOPIC_FIELDS = { vocab: 'add-vocab-topic', conversation: 'add-conv-topic', choice: 'add-choice-topic', phonemes: 'add-phoneme-topic', grammar: 'add-gram-topic', fill: 'add-fill-topic', order: 'add-order-topic' };
 
 function clearForm(type, keepTopicField = false) {
     FORM_FIELDS[type].forEach(id => setVal(id, ''));
@@ -392,6 +407,24 @@ export function addConversationItem() {
     saveDB(renderCreatorLists, populateTopicDropdown);
     clearForm('conversation', true);
     showToast(t('conversationSaved'));
+}
+
+export function addChoiceItem() {
+    const prompt = val('add-choice-prompt');
+    const answer = val('add-choice-answer');
+    const wrong = [val('add-choice-wrong1'), val('add-choice-wrong2')].filter(Boolean);
+    if (!answer || wrong.length < 2) return showToast(t('completeChoiceFields'));
+    const level = val('add-choice-level') || 'A1';
+    const existing = findEditing('choice');
+
+    if (existing) {
+        Object.assign(existing, { prompt, answer, wrong, level, topic: keepTopic(existing.topic, val('add-choice-topic')) });
+        return finishEdit('choice', 'choiceUpdated');
+    }
+    db.choice.push(newItem('ch', { prompt, answer, wrong, level, topic: topicFromInput(val('add-choice-topic') || 'grammar') }));
+    saveDB(renderCreatorLists, populateTopicDropdown);
+    clearForm('choice', true);
+    showToast(t('choiceSaved'));
 }
 
 export function addPhonemeItem() {
@@ -509,6 +542,7 @@ window.cancelEdit = cancelEdit;
 window.switchCreatorTab = switchCreatorTab;
 window.addVocabItem = addVocabItem;
 window.addConversationItem = addConversationItem;
+window.addChoiceItem = addChoiceItem;
 window.addPhonemeItem = addPhonemeItem;
 window.addGrammarItem = addGrammarItem;
 window.addFillItem = addFillItem;

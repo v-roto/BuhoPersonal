@@ -16,7 +16,7 @@ const LANG_PACKS = { fr, en, es, it, de };
 
 export const STUDY_LANGS = Object.keys(LANG_PACKS);
 
-export const CONTENT_CATEGORIES = ['vocab', 'conversation', 'phonemes', 'grammar', 'fill', 'order'];
+export const CONTENT_CATEGORIES = ['vocab', 'conversation', 'choice', 'phonemes', 'grammar', 'fill', 'order'];
 
 // Claves internas de conjugación (se mantienen por compatibilidad con datos guardados)
 export const CONJUGATION_KEYS = ['je', 'tu', 'il', 'nous', 'vous', 'ils'];
@@ -57,6 +57,31 @@ function buildConversations(lang) {
     }));
 }
 
+// Id estable a partir del texto (no cambia si se reordena el archivo)
+function stableId(text) {
+    let h = 0;
+    for (const ch of text) h = (h * 31 + ch.codePointAt(0)) | 0;
+    return (h >>> 0).toString(36);
+}
+
+const WRITE_TITLE = { es: 'Escribe la forma correcta del verbo', en: 'Write the correct form of the verb', fr: 'Écris la bonne forme du verbe' };
+
+// Opción múltiple: [nivel, enunciado, respuesta, "distractor|distractor"]
+function buildChoice(lang, rows = []) {
+    return rows.map(([level, prompt, answer, wrong]) => ({
+        id: `${lang}_ch_${stableId(prompt + '|' + answer)}`,
+        level, topic: 'grammar', prompt, answer, wrong: wrong.split('|')
+    }));
+}
+
+// Escribir el verbo entre paréntesis: se guardan como ejercicios de «Completar oración»
+function buildFillWrite(lang, rows = []) {
+    return rows.map(([level, sentence, answers]) => ({
+        id: `${lang}_fw_${stableId(sentence)}`,
+        title: WRITE_TITLE, sentence, answer: answers, img: '', topic: 'verbs', level
+    }));
+}
+
 const packCache = {};
 
 // Paquete completo (todas las categorías) de un idioma
@@ -68,9 +93,10 @@ export function getPack(lang) {
             pronouns: base.pronouns,
             vocab: buildVocab(lang),
             conversation: buildConversations(lang),
+            choice: buildChoice(lang, base.choice),
             phonemes: base.phonemes || [],
             grammar: base.grammar || [],
-            fill: base.fill || [],
+            fill: [...(base.fill || []), ...buildFillWrite(lang, base.fillWrite)],
             order: base.order || []
         };
     }
@@ -109,6 +135,7 @@ export function getExamples(lang) {
     const fill = pack.fill[0] || {};
     const order = pack.order[0] || {};
     const conv = pack.conversation[0] || {};
+    const choice = pack.choice[0] || { wrong: [] };
     return {
         vocabWord: vocab.fr, vocabTrans: vocab.es, vocabEmoji: vocab.img,
         phonemeSymbol: phoneme.symbol, phonemeWord: phoneme.word, phonemeTrans: phoneme.trans, phonemeEmoji: phoneme.img,
@@ -116,7 +143,8 @@ export function getExamples(lang) {
         fillTitle: fill.title, fillSentence: fill.sentence, fillAnswer: fill.answer, fillEmoji: fill.img,
         orderTitle: order.title, orderSentence: order.sentence, orderExtras: (order.extras || []).join(', '),
         convContext: conv.context, convPrompt: conv.prompt, convPromptTr: conv.promptTr,
-        convAnswer: conv.answer, convWrong: conv.wrong || [], convEmoji: conv.img
+        convAnswer: conv.answer, convWrong: conv.wrong || [], convEmoji: conv.img,
+        choicePrompt: choice.prompt, choiceAnswer: choice.answer, choiceWrong: choice.wrong
     };
 }
 
@@ -126,5 +154,5 @@ export const LEGACY_TOPIC_KEYS = {
     'Fonética': 'phonetics', 'Verbos': 'verbs', 'Frases': 'phrases', 'Sintaxis': 'syntax'
 };
 
-export const TOPIC_KEYS = ['General', 'food', 'animals', 'city', 'nature', 'study', 'travel', 'health', 'work',
+export const TOPIC_KEYS = ['General', 'grammar', 'food', 'animals', 'city', 'nature', 'study', 'travel', 'health', 'work',
     'society', 'language', 'conversation', 'phonetics', 'verbs', 'phrases', 'syntax'];

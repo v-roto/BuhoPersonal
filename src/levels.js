@@ -32,16 +32,15 @@ export function isItemDue(item) {
     return daysElapsed >= getRequiredDays(score);
 }
 
-// Filtra considerando nivel y asegurando que ítems con bajo dominio (huecos de conocimiento) aparezcan
+// Filtra por nivel evitando huecos de conocimiento:
+// - siempre entran los ítems del nivel elegido;
+// - de niveles inferiores solo entran los ya practicados con bajo dominio (1-3) que toca repasar;
+// - los niveles superiores quedan fuera.
 export function matchesLevelAndSRS(item, selectedLevel) {
-    const itemLevel = item.level || 'A1';
-    const score = item.score || 0;
-
-    // Si el ítem tiene un puntaje bajo (score < 4), se considera pendiente de refuerzo (evita huecos de conocimiento)
-    if (score < 4 && isItemDue(item)) {
-        return true;
-    }
-
     if (selectedLevel === 'all') return true;
-    return itemLevel === selectedLevel;
+    const itemIdx = CEFR_LEVELS.indexOf(item.level || 'A1');
+    const selectedIdx = CEFR_LEVELS.indexOf(selectedLevel);
+    if (itemIdx === selectedIdx) return true;
+    const score = item.score || 0;
+    return itemIdx < selectedIdx && score > 0 && score < 4 && isItemDue(item);
 }

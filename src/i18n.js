@@ -39,17 +39,17 @@ export const translations = {
         targetLevel: "Nivel Objetivo",
         langSettings: "🌐 Configuración de Idiomas",
         appearanceAndLevel: "🎨 Apariencia y Nivel CEFR",
-        dashboardTitle: "Panel Principal • Búho Personal",
+        dashboardTitle: "¡Hola! 🦉",
         dashboardSubtitle: "Gestiona tu aprendizaje, idiomas, temas y configuración desde un solo lugar.",
         btnStartPractice: "🎮 Iniciar Sesión de Práctica",
-        btnManageContent: "➕ Administrar Contenido / Vocabulario",
+        btnManageContent: "➕ Administrar mi contenido",
         feedKnowledgeTitle: "Alimentar Base de Conocimiento",
-        feedKnowledgeSubtitle: "Añade tus propias palabras, fonemas y conjugaciones agrupadas por tema/bloque.",
-        vocabCardTitle: "1. Vocabulario",
-        phonemesCardTitle: "2. Pronunciación de Fonemas y Letras",
-        grammarCardTitle: "3. Tabla Gramatical (Conjugaciones)",
-        fillCardTitle: "4. Completar Oración",
-        orderCardTitle: "5. Reordenar Oración",
+        feedKnowledgeSubtitle: "Añade tus propias palabras, conversaciones y ejercicios. Todo se guarda para el idioma que estás aprendiendo.",
+        vocabCardTitle: "📘 Vocabulario",
+        phonemesCardTitle: "🗣️ Pronunciación de fonemas y letras",
+        grammarCardTitle: "📗 Tabla gramatical (conjugaciones)",
+        fillCardTitle: "✏️ Completar oración",
+        orderCardTitle: "🧩 Reordenar oración",
         soundSettingsTitle: "🔔 Sonidos Personalizados de Respuesta y Fin de Sesión",
         voiceSettingsTitle: "🎙️ Configuración de Voz Nativa del Dispositivo",
         wordInStudyLang: "Palabra en el idioma de estudio",
@@ -124,7 +124,7 @@ export const translations = {
         reviewBadge: "Repaso",
         speakCompleteSentence: "Pronuncia la oración completa: \"{title}\"",
         speakSentence: "Pronuncia la oración: \"{title}\"",
-        noContentForFilters: "No hay contenido para este idioma/tema/nivel. Añade contenido en la sección Contenido.",
+        noContentForFilters: "No hay ejercicios para este idioma, tema y nivel. Prueba con otro nivel o tema, o añade tu propio contenido.",
         voiceSaved: "Configuración de voz guardada.",
         noVoicesFound: "No se encontraron voces instaladas",
         speechNotSupported: "Tu navegador no soporta captura de voz nativa.",
@@ -166,7 +166,93 @@ export const translations = {
         writeFileWarning: "⚠️ Advertencia: No se pudo escribir en el archivo local.",
         statusConnected: "Estado: 🟢 Conectado y auto-guardando ({name})",
         statusNeedsPermission: "Estado: 🟡 Archivo vinculado previamente (\"{name}\"). Haz clic en Reconectar.",
-        statusNotConnected: "Estado: 🔴 Ningún archivo conectado (usando almacenamiento interno)"
+        statusNotConnected: "Estado: 🔴 Ningún archivo conectado (usando almacenamiento interno)",
+        conversationCardTitle: "💬 Conversación",
+        conversationTitle: "Responde en la conversación 💬",
+        chooseBestReply: "Elige la mejor respuesta:",
+        showTranslation: "👁️ Ver traducción",
+        hideTranslation: "🙈 Ocultar traducción",
+        speakReply: "Responde en voz alta a: \"{prompt}\"",
+        convContext: "Situación (contexto)",
+        convPrompt: "Lo que dice la otra persona",
+        convPromptTr: "Traducción de la frase (opcional)",
+        convAnswer: "Respuesta correcta",
+        convWrong1: "Respuesta incorrecta 1",
+        convWrong2: "Respuesta incorrecta 2 (opcional)",
+        saveConversation: "+ Guardar conversación",
+        editConversationTitle: "Editar conversación",
+        updateConversation: "Actualizar conversación",
+        conversationSaved: "Conversación guardada.",
+        conversationUpdated: "Conversación actualizada.",
+        completeConversationFields: "Completa la frase, la respuesta correcta y al menos una incorrecta.",
+        tabVocab: "📘 Vocabulario",
+        tabConversation: "💬 Conversación",
+        tabPhonemes: "🗣️ Fonemas",
+        tabGrammar: "📗 Gramática",
+        tabFill: "✏️ Completar",
+        tabOrder: "🧩 Ordenar",
+        tabSettings: "⚙️ Ajustes",
+        editingContentFor: "Estás viendo y editando el contenido de {lang}.",
+        emptyList: "Aún no hay elementos para este idioma.",
+        wordInLang: "Palabra en {lang}",
+        translationInLang: "Traducción ({lang})",
+        sentenceInLangBlank: "Oración en {lang} (usa '___' para el hueco)",
+        sentenceInLang: "Oración completa en {lang}",
+        examplePrefix: "p. ej.",
+        topicPlaceholder: "p. ej. Familia, Comida, General",
+        yourItems: "Tus elementos",
+        topic_General: "General",
+        topic_food: "Comida",
+        topic_animals: "Animales",
+        topic_city: "Ciudad",
+        topic_nature: "Naturaleza",
+        topic_study: "Estudio",
+        topic_travel: "Viajes",
+        topic_health: "Salud",
+        topic_work: "Trabajo",
+        topic_society: "Sociedad",
+        topic_language: "Lenguaje",
+        topic_conversation: "Conversación",
+        topic_phonetics: "Fonética",
+        topic_verbs: "Verbos",
+        topic_phrases: "Frases",
+        topic_syntax: "Sintaxis",
+        homeGreeting: "Estás aprendiendo {lang}",
+        homeLevelLine: "Nivel {level} · {due} ejercicios listos para hoy",
+        statSessions: "Sesiones",
+        statMastered: "Dominados",
+        statDue: "Para repasar",
+        statInLevel: "En tu nivel",
+        yourLevel: "🎯 Tu nivel",
+        levelHint: "El vocabulario y las conversaciones se adaptan al nivel que elijas.",
+        levelNameAll: "Todos",
+        levelDescAll: "Mezcla de todos los niveles",
+        levelNameA1: "Principiante",
+        levelNameA2: "Elemental",
+        levelNameB1: "Intermedio",
+        levelNameB2: "Intermedio alto",
+        levelNameC1: "Avanzado",
+        levelNameC2: "Maestría",
+        levelDescA1: "Saludos, presentarte y frases básicas",
+        levelDescA2: "Situaciones cotidianas: pedir, preguntar direcciones",
+        levelDescB1: "Contar experiencias y resolver imprevistos",
+        levelDescB2: "Debatir y argumentar con soltura",
+        levelDescC1: "Expresarte con precisión en el trabajo",
+        levelDescC2: "Matices, ironía y dominio casi nativo",
+        onbWelcome: "¡Bienvenido a Búho Personal!",
+        onbChooseLang: "¿Qué idioma quieres aprender?",
+        onbChooseLevel: "¿Cuál es tu nivel?",
+        onbLevelHint: "Puedes cambiarlo cuando quieras desde Inicio.",
+        onbBack: "← Atrás",
+        onbUiLang: "Idioma de la interfaz",
+        onbStep: "Paso {n} de 2",
+        summaryCorrect: "Aciertos a la primera",
+        summaryAccuracy: "Precisión",
+        summaryReviewed: "Ejercicios",
+        backHome: "🏠 Volver al inicio",
+        settingsTabTitle: "⚙️ Sonidos, voz y copias de seguridad",
+        keyboardHint: "Consejo: usa las teclas 1-3 para elegir y Enter para comprobar.",
+        levelMastery: "{pct}% dominado"
     },
     en: {
         home: "🏠 Home",
@@ -206,17 +292,17 @@ export const translations = {
         targetLevel: "Target Level",
         langSettings: "🌐 Language Settings",
         appearanceAndLevel: "🎨 Appearance & CEFR Level",
-        dashboardTitle: "Dashboard • Personal Owl",
+        dashboardTitle: "Hello! 🦉",
         dashboardSubtitle: "Manage your learning, languages, themes and settings in one place.",
         btnStartPractice: "🎮 Start Practice Session",
-        btnManageContent: "➕ Manage Content / Vocabulary",
+        btnManageContent: "➕ Manage my content",
         feedKnowledgeTitle: "Feed Knowledge Base",
-        feedKnowledgeSubtitle: "Add your own words, phonemes, and conjugations grouped by topic/block.",
-        vocabCardTitle: "1. Vocabulary",
-        phonemesCardTitle: "2. Phonemes and Letters Pronunciation",
-        grammarCardTitle: "3. Grammar Table (Conjugations)",
-        fillCardTitle: "4. Fill in the Blank",
-        orderCardTitle: "5. Sentence Reordering",
+        feedKnowledgeSubtitle: "Add your own words, conversations and exercises. Everything is saved for the language you're learning.",
+        vocabCardTitle: "📘 Vocabulary",
+        phonemesCardTitle: "🗣️ Phonemes and letters pronunciation",
+        grammarCardTitle: "📗 Grammar table (conjugations)",
+        fillCardTitle: "✏️ Fill in the blank",
+        orderCardTitle: "🧩 Sentence reordering",
         soundSettingsTitle: "🔔 Custom Answer and Session Sounds",
         voiceSettingsTitle: "🎙️ Native Device Voice Settings",
         wordInStudyLang: "Word in study language",
@@ -291,7 +377,7 @@ export const translations = {
         reviewBadge: "Review",
         speakCompleteSentence: "Pronounce the full sentence: \"{title}\"",
         speakSentence: "Pronounce the sentence: \"{title}\"",
-        noContentForFilters: "No content for this language/topic/level. Add content in the Content section.",
+        noContentForFilters: "No exercises for this language, topic and level. Try another level or topic, or add your own content.",
         voiceSaved: "Voice settings saved.",
         noVoicesFound: "No installed voices found",
         speechNotSupported: "Your browser does not support native voice capture.",
@@ -333,7 +419,93 @@ export const translations = {
         writeFileWarning: "⚠️ Warning: Could not write to the local file.",
         statusConnected: "Status: 🟢 Connected and auto-saving ({name})",
         statusNeedsPermission: "Status: 🟡 Previously linked file (\"{name}\"). Click Reconnect.",
-        statusNotConnected: "Status: 🔴 No file connected (using internal storage)"
+        statusNotConnected: "Status: 🔴 No file connected (using internal storage)",
+        conversationCardTitle: "💬 Conversation",
+        conversationTitle: "Reply in the conversation 💬",
+        chooseBestReply: "Choose the best reply:",
+        showTranslation: "👁️ Show translation",
+        hideTranslation: "🙈 Hide translation",
+        speakReply: "Reply out loud to: \"{prompt}\"",
+        convContext: "Situation (context)",
+        convPrompt: "What the other person says",
+        convPromptTr: "Translation of the line (optional)",
+        convAnswer: "Correct reply",
+        convWrong1: "Wrong reply 1",
+        convWrong2: "Wrong reply 2 (optional)",
+        saveConversation: "+ Save conversation",
+        editConversationTitle: "Edit conversation",
+        updateConversation: "Update conversation",
+        conversationSaved: "Conversation saved.",
+        conversationUpdated: "Conversation updated.",
+        completeConversationFields: "Fill in the line, the correct reply and at least one wrong reply.",
+        tabVocab: "📘 Vocabulary",
+        tabConversation: "💬 Conversation",
+        tabPhonemes: "🗣️ Phonemes",
+        tabGrammar: "📗 Grammar",
+        tabFill: "✏️ Fill in",
+        tabOrder: "🧩 Reorder",
+        tabSettings: "⚙️ Settings",
+        editingContentFor: "You're viewing and editing your {lang} content.",
+        emptyList: "No items for this language yet.",
+        wordInLang: "Word in {lang}",
+        translationInLang: "Translation ({lang})",
+        sentenceInLangBlank: "Sentence in {lang} (use '___' for the gap)",
+        sentenceInLang: "Full sentence in {lang}",
+        examplePrefix: "e.g.",
+        topicPlaceholder: "e.g. Family, Food, General",
+        yourItems: "Your items",
+        topic_General: "General",
+        topic_food: "Food",
+        topic_animals: "Animals",
+        topic_city: "City",
+        topic_nature: "Nature",
+        topic_study: "Study",
+        topic_travel: "Travel",
+        topic_health: "Health",
+        topic_work: "Work",
+        topic_society: "Society",
+        topic_language: "Language",
+        topic_conversation: "Conversation",
+        topic_phonetics: "Phonetics",
+        topic_verbs: "Verbs",
+        topic_phrases: "Sentences",
+        topic_syntax: "Syntax",
+        homeGreeting: "You're learning {lang}",
+        homeLevelLine: "Level {level} · {due} exercises ready today",
+        statSessions: "Sessions",
+        statMastered: "Mastered",
+        statDue: "To review",
+        statInLevel: "In your level",
+        yourLevel: "🎯 Your level",
+        levelHint: "Vocabulary and conversations adapt to the level you choose.",
+        levelNameAll: "All",
+        levelDescAll: "A mix of every level",
+        levelNameA1: "Beginner",
+        levelNameA2: "Elementary",
+        levelNameB1: "Intermediate",
+        levelNameB2: "Upper intermediate",
+        levelNameC1: "Advanced",
+        levelNameC2: "Mastery",
+        levelDescA1: "Greetings, introducing yourself, basic phrases",
+        levelDescA2: "Everyday situations: ordering, asking for directions",
+        levelDescB1: "Talking about experiences and handling the unexpected",
+        levelDescB2: "Debating and arguing fluently",
+        levelDescC1: "Expressing yourself precisely at work",
+        levelDescC2: "Nuance, irony and near-native command",
+        onbWelcome: "Welcome to Búho Personal!",
+        onbChooseLang: "Which language do you want to learn?",
+        onbChooseLevel: "What's your level?",
+        onbLevelHint: "You can change it any time from Home.",
+        onbBack: "← Back",
+        onbUiLang: "Interface language",
+        onbStep: "Step {n} of 2",
+        summaryCorrect: "Right first time",
+        summaryAccuracy: "Accuracy",
+        summaryReviewed: "Exercises",
+        backHome: "🏠 Back to home",
+        settingsTabTitle: "⚙️ Sounds, voice and backups",
+        keyboardHint: "Tip: use keys 1-3 to choose and Enter to check.",
+        levelMastery: "{pct}% mastered"
     },
     fr: {
         home: "🏠 Accueil",
@@ -373,17 +545,17 @@ export const translations = {
         targetLevel: "Niveau Cible",
         langSettings: "🌐 Configuration des Langues",
         appearanceAndLevel: "🎨 Apparence et Niveau CECR",
-        dashboardTitle: "Tableau de bord • Búho Personal",
+        dashboardTitle: "Bonjour ! 🦉",
         dashboardSubtitle: "Gérez votre apprentissage, vos langues et vos paramètres depuis un seul endroit.",
         btnStartPractice: "🎮 Démarrer la session de pratique",
-        btnManageContent: "➕ Gérer le contenu / Vocabulaire",
+        btnManageContent: "➕ Gérer mon contenu",
         feedKnowledgeTitle: "Alimenter la base de connaissances",
-        feedKnowledgeSubtitle: "Ajoutez vos propres mots, phonèmes et conjugaisons regroupés par thème/bloc.",
-        vocabCardTitle: "1. Vocabulaire",
-        phonemesCardTitle: "2. Prononciation des phonèmes et lettres",
-        grammarCardTitle: "3. Tableau de grammaire (Conjugaisons)",
-        fillCardTitle: "4. Compléter la phrase",
-        orderCardTitle: "5. Réorganiser la phrase",
+        feedKnowledgeSubtitle: "Ajoute tes propres mots, conversations et exercices. Tout est enregistré pour la langue que tu apprends.",
+        vocabCardTitle: "📘 Vocabulaire",
+        phonemesCardTitle: "🗣️ Prononciation des phonèmes et lettres",
+        grammarCardTitle: "📗 Tableau de grammaire (conjugaisons)",
+        fillCardTitle: "✏️ Compléter la phrase",
+        orderCardTitle: "🧩 Réorganiser la phrase",
         soundSettingsTitle: "🔔 Sons personnalisés de réponse et fin de session",
         voiceSettingsTitle: "🎙️ Configuration de la voix native du système",
         wordInStudyLang: "Mot dans la langue d'étude",
@@ -458,7 +630,7 @@ export const translations = {
         reviewBadge: "Révision",
         speakCompleteSentence: "Prononcez la phrase complète : \"{title}\"",
         speakSentence: "Prononcez la phrase : \"{title}\"",
-        noContentForFilters: "Aucun contenu pour cette langue/thème/niveau. Ajoutez du contenu dans la section Contenu.",
+        noContentForFilters: "Aucun exercice pour cette langue, ce thème et ce niveau. Essaie un autre niveau ou thème, ou ajoute ton propre contenu.",
         voiceSaved: "Paramètres de voix enregistrés.",
         noVoicesFound: "Aucune voix installée trouvée",
         speechNotSupported: "Votre navigateur ne prend pas en charge la capture vocale native.",
@@ -500,7 +672,93 @@ export const translations = {
         writeFileWarning: "⚠️ Avertissement : Impossible d'écrire dans le fichier local.",
         statusConnected: "État : 🟢 Connecté et enregistrement automatique ({name})",
         statusNeedsPermission: "État : 🟡 Fichier précédemment lié (\"{name}\"). Cliquez sur Reconnecter.",
-        statusNotConnected: "État : 🔴 Aucun fichier connecté (stockage interne utilisé)"
+        statusNotConnected: "État : 🔴 Aucun fichier connecté (stockage interne utilisé)",
+        conversationCardTitle: "💬 Conversation",
+        conversationTitle: "Réponds dans la conversation 💬",
+        chooseBestReply: "Choisis la meilleure réponse :",
+        showTranslation: "👁️ Voir la traduction",
+        hideTranslation: "🙈 Masquer la traduction",
+        speakReply: "Réponds à voix haute à : « {prompt} »",
+        convContext: "Situation (contexte)",
+        convPrompt: "Ce que dit l'autre personne",
+        convPromptTr: "Traduction de la phrase (facultatif)",
+        convAnswer: "Bonne réponse",
+        convWrong1: "Mauvaise réponse 1",
+        convWrong2: "Mauvaise réponse 2 (facultatif)",
+        saveConversation: "+ Enregistrer la conversation",
+        editConversationTitle: "Modifier la conversation",
+        updateConversation: "Mettre à jour la conversation",
+        conversationSaved: "Conversation enregistrée.",
+        conversationUpdated: "Conversation mise à jour.",
+        completeConversationFields: "Remplis la phrase, la bonne réponse et au moins une mauvaise réponse.",
+        tabVocab: "📘 Vocabulaire",
+        tabConversation: "💬 Conversation",
+        tabPhonemes: "🗣️ Phonèmes",
+        tabGrammar: "📗 Grammaire",
+        tabFill: "✏️ Compléter",
+        tabOrder: "🧩 Réorganiser",
+        tabSettings: "⚙️ Réglages",
+        editingContentFor: "Tu consultes et modifies ton contenu en {lang}.",
+        emptyList: "Aucun élément pour cette langue pour l'instant.",
+        wordInLang: "Mot en {lang}",
+        translationInLang: "Traduction ({lang})",
+        sentenceInLangBlank: "Phrase en {lang} (utilise '___' pour le trou)",
+        sentenceInLang: "Phrase complète en {lang}",
+        examplePrefix: "ex.",
+        topicPlaceholder: "ex. Famille, Nourriture, Général",
+        yourItems: "Tes éléments",
+        topic_General: "Général",
+        topic_food: "Nourriture",
+        topic_animals: "Animaux",
+        topic_city: "Ville",
+        topic_nature: "Nature",
+        topic_study: "Études",
+        topic_travel: "Voyages",
+        topic_health: "Santé",
+        topic_work: "Travail",
+        topic_society: "Société",
+        topic_language: "Langue",
+        topic_conversation: "Conversation",
+        topic_phonetics: "Phonétique",
+        topic_verbs: "Verbes",
+        topic_phrases: "Phrases",
+        topic_syntax: "Syntaxe",
+        homeGreeting: "Tu apprends : {lang}",
+        homeLevelLine: "Niveau {level} · {due} exercices prêts aujourd'hui",
+        statSessions: "Sessions",
+        statMastered: "Maîtrisés",
+        statDue: "À réviser",
+        statInLevel: "Dans ton niveau",
+        yourLevel: "🎯 Ton niveau",
+        levelHint: "Le vocabulaire et les conversations s'adaptent au niveau choisi.",
+        levelNameAll: "Tous",
+        levelDescAll: "Un mélange de tous les niveaux",
+        levelNameA1: "Débutant",
+        levelNameA2: "Élémentaire",
+        levelNameB1: "Intermédiaire",
+        levelNameB2: "Intermédiaire avancé",
+        levelNameC1: "Avancé",
+        levelNameC2: "Maîtrise",
+        levelDescA1: "Saluer, se présenter, phrases de base",
+        levelDescA2: "Situations quotidiennes : commander, demander son chemin",
+        levelDescB1: "Raconter des expériences et gérer l'imprévu",
+        levelDescB2: "Débattre et argumenter avec aisance",
+        levelDescC1: "S'exprimer avec précision au travail",
+        levelDescC2: "Nuances, ironie et maîtrise quasi native",
+        onbWelcome: "Bienvenue sur Búho Personal !",
+        onbChooseLang: "Quelle langue veux-tu apprendre ?",
+        onbChooseLevel: "Quel est ton niveau ?",
+        onbLevelHint: "Tu peux le changer à tout moment depuis l'Accueil.",
+        onbBack: "← Retour",
+        onbUiLang: "Langue de l'interface",
+        onbStep: "Étape {n} sur 2",
+        summaryCorrect: "Réussis du premier coup",
+        summaryAccuracy: "Précision",
+        summaryReviewed: "Exercices",
+        backHome: "🏠 Retour à l'accueil",
+        settingsTabTitle: "⚙️ Sons, voix et sauvegardes",
+        keyboardHint: "Astuce : utilise les touches 1-3 pour choisir et Entrée pour vérifier.",
+        levelMastery: "{pct}% maîtrisé"
     }
 };
 
@@ -544,13 +802,61 @@ export function applyTheme() {
 
 const STUDY_LANG_NAME_KEYS = { fr: 'langFr', en: 'langEn', es: 'langEs', it: 'langIt', de: 'langDe' };
 const STUDY_LANG_CODES = { fr: 'fr-FR', en: 'en-US', es: 'es-ES', it: 'it-IT', de: 'de-DE' };
+export const LANG_FLAGS = { fr: '🇫🇷', en: '🇬🇧', es: '🇪🇸', it: '🇮🇹', de: '🇩🇪' };
+
+export function getLangName(code) {
+    return t(STUDY_LANG_NAME_KEYS[code] || 'langFr');
+}
 
 export function getStudyLangName() {
-    return t(STUDY_LANG_NAME_KEYS[currentStudyLang] || 'langFr');
+    return getLangName(currentStudyLang);
 }
 
 export function getStudyLangCode() {
     return STUDY_LANG_CODES[currentStudyLang] || 'fr-FR';
+}
+
+// Idioma en que se muestran las traducciones: el de la interfaz, salvo que coincida
+// con el idioma que se estudia (entonces una traducción no aportaría nada).
+export function getTranslationLang() {
+    if (currentUiLang !== currentStudyLang) return currentUiLang;
+    return currentStudyLang === 'es' ? 'en' : 'es';
+}
+
+function pickLocalized(value, lang) {
+    if (value === null || value === undefined) return '';
+    if (typeof value !== 'object') return String(value);
+    return value[lang] || value.es || value.en || Object.values(value)[0] || '';
+}
+
+// Texto multi-idioma ({ es, en, fr }) en el idioma de la interfaz (instrucciones, contextos)
+export function localize(value) {
+    return pickLocalized(value, currentUiLang);
+}
+
+// Traducción multi-idioma en el idioma de traducción (nunca revela la respuesta en el idioma de estudio)
+export function localizeTranslation(value) {
+    return pickLocalized(value, getTranslationLang());
+}
+
+// Nombre visible de un tema: claves conocidas se traducen, el texto libre se muestra tal cual
+export function topicLabel(topic) {
+    const key = 'topic_' + (topic || 'General');
+    const dict = translations[currentUiLang] || translations.es;
+    return dict[key] || translations.es[key] || topic || 'General';
+}
+
+// Convierte lo que el usuario escribe en un tema a su clave si coincide con un tema conocido
+export function topicFromInput(text) {
+    const clean = (text || '').trim();
+    if (!clean) return 'General';
+    const lower = clean.toLowerCase();
+    for (const lang of Object.keys(translations)) {
+        for (const [key, label] of Object.entries(translations[lang])) {
+            if (key.startsWith('topic_') && label.toLowerCase() === lower) return key.slice(6);
+        }
+    }
+    return clean;
 }
 
 export function t(key, vars) {
@@ -582,45 +888,18 @@ export function applyTranslationsToDOM() {
         }
     });
 
-    // Translate dynamic selects like level selects
-    const levelSelects = ['level-filter-select', 'home-level-select', 'add-vocab-level'];
-    levelSelects.forEach(id => {
-        const sel = document.getElementById(id);
-        if (!sel) return;
-        const optAll = sel.querySelector('option[value="all"]');
-        if (optAll) optAll.textContent = t('allLevels');
-        const optA1 = sel.querySelector('option[value="A1"]');
-        if (optA1) optA1.textContent = t('levelA1');
-        const optA2 = sel.querySelector('option[value="A2"]');
-        if (optA2) optA2.textContent = t('levelA2');
-        const optB1 = sel.querySelector('option[value="B1"]');
-        if (optB1) optB1.textContent = t('levelB1');
-        const optB2 = sel.querySelector('option[value="B2"]');
-        if (optB2) optB2.textContent = t('levelB2');
-        const optC1 = sel.querySelector('option[value="C1"]');
-        if (optC1) optC1.textContent = t('levelC1');
-        const optC2 = sel.querySelector('option[value="C2"]');
-        if (optC2) optC2.textContent = t('levelC2');
+    // Selectores de nivel (cabecera y formularios del creador)
+    document.querySelectorAll('select.level-select, #level-filter-select').forEach(sel => {
+        sel.querySelectorAll('option').forEach(opt => {
+            opt.textContent = opt.value === 'all' ? t('allLevels') : t('level' + opt.value);
+        });
     });
 
-    const topicSelect = document.getElementById('topic-filter-select');
-    if (topicSelect) {
-        const optAll = topicSelect.querySelector('option[value="all"]');
+    ['topic-filter-select', 'home-topic-select'].forEach(id => {
+        const sel = document.getElementById(id);
+        const optAll = sel && sel.querySelector('option[value="all"]');
         if (optAll) optAll.textContent = t('allTopics');
-    }
+    });
 
-    const homeTopicSelect = document.getElementById('home-topic-select');
-    if (homeTopicSelect) {
-        const optAll = homeTopicSelect.querySelector('option[value="all"]');
-        if (optAll) optAll.textContent = t('allTopics');
-    }
-
-    const STUDY_LANG_FLAGS = { fr: '🇫🇷', en: '🇬🇧', es: '🇪🇸', it: '🇮🇹', de: '🇩🇪' };
-    const studyLangSelect = document.getElementById('study-lang-select');
-    if (studyLangSelect) {
-        Object.keys(STUDY_LANG_FLAGS).forEach(code => {
-            const opt = studyLangSelect.querySelector(`option[value="${code}"]`);
-            if (opt) opt.textContent = `${STUDY_LANG_FLAGS[code]} ${t(STUDY_LANG_NAME_KEYS[code])}`;
-        });
-    }
+    document.documentElement.lang = currentUiLang;
 }

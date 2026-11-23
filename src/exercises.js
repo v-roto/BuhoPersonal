@@ -1,9 +1,10 @@
 // --- Módulo de Lógica de Ejercicios y Práctica ---
 
-import { db, sessionCount, currentTopicFilter, saveDB, incrementSessionCount } from './state.js';
+import { db, sessionCount, currentTopicFilter, saveDB, incrementSessionCount, itemLang } from './state.js';
+import { getPronouns } from './content/index.js';
 import { speakFrench, toggleSpeechRecognition, playSound } from './audio.js';
 import { getLevelFilter, isItemDue, matchesLevelAndSRS } from './levels.js';
-import { t, getStudyLang, getStudyLangName } from './i18n.js';
+import { t, getStudyLang, getStudyLangName, localize, localizeTranslation } from './i18n.js';
 
 let sessionQueue = [];
 let retryQueue = [];
@@ -13,61 +14,49 @@ let isChecked = false;
 let selectedWords = [];
 let questionStartTime = 0;
 
+let sessionStats = { total: 0, answered: 0, firstTryAnswered: 0, firstTryCorrect: 0 };
+let selectedChoice = null;
+
+// Escapa texto para usarlo como argumento JS dentro de un atributo onclick="..."
+function jsArg(text) {
+    return String(text || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+function escapeHTML(text) {
+    return String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 let matchSelectedLeft = null;
 let matchSelectedRight = null;
 let matchedPairs = [];
 
 export function selectMatchItem(side, index, itemId) {
     if (matchedPairs.includes(itemId)) return;
+    if (!questionStartTime) questionStartTime = Date.now();
 
-    if (side === 'left') {
-        document.querySelectorAll('[id^="match-left-"]').forEach(el => el.style.borderColor = 'var(--duo-gray-border)');
-        matchSelectedLeft = { index, itemId };
-        document.getElementById(`match-left-${index}`).style.borderColor = 'var(--duo-blue)';
-    } else {
-        document.querySelectorAll('[id^="match-right-"]').forEach(el => el.style.borderColor = 'var(--duo-gray-border)');
-        matchSelectedRight = { index, itemId };
-        document.getElementById(`match-right-${index}`).style.borderColor = 'var(--duo-blue)';
-    }
+    const prefix = side === 'left' ? 'match-left-' : 'match-right-';
+    document.querySelectorAll(`[id^="${prefix}"]`).forEach(el => el.classList.remove('is-selected'));
+    document.getElementById(`${prefix}${index}`).classList.add('is-selected');
+    if (side === 'left') matchSelectedLeft = { index, itemId };
+    else matchSelectedRight = { index, itemId };
 
     if (matchSelectedLeft && matchSelectedRight) {
+        const leftEl = document.getElementById(`match-left-${matchSelectedLeft.index}`);
+        const rightEl = document.getElementById(`match-right-${matchSelectedRight.index}`);
+        [leftEl, rightEl].forEach(el => el.classList.remove('is-selected'));
+
         if (matchSelectedLeft.itemId === matchSelectedRight.itemId) {
             matchedPairs.push(matchSelectedLeft.itemId);
-            const leftEl = document.getElementById(`match-left-${matchSelectedLeft.index}`);
-            const rightEl = document.getElementById(`match-right-${matchSelectedRight.index}`);
-            
-            leftEl.style.background = 'var(--duo-green-light)';
-            leftEl.style.borderColor = 'var(--duo-green)';
-            leftEl.style.opacity = '0.6';
-            leftEl.style.pointerEvents = 'none';
-
-            rightEl.style.background = 'var(--duo-green-light)';
-            rightEl.style.borderColor = 'var(--duo-green)';
-            rightEl.style.opacity = '0.6';
-            rightEl.style.pointerEvents = 'none';
-
+            [leftEl, rightEl].forEach(el => el.classList.add('is-matched'));
             playSound('correct');
             matchSelectedLeft = null;
             matchSelectedRight = null;
         } else {
-            const leftEl = document.getElementById(`match-left-${matchSelectedLeft.index}`);
-            const rightEl = document.getElementById(`match-right-${matchSelectedRight.index}`);
-
-            leftEl.style.borderColor = 'var(--duo-red)';
-            leftEl.style.background = 'var(--duo-red-light)';
-            rightEl.style.borderColor = 'var(--duo-red)';
-            rightEl.style.background = 'var(--duo-red-light)';
-            
+            [leftEl, rightEl].forEach(el => el.classList.add('is-wrong'));
             playSound('incorrect');
-
-            setTimeout(() => {
-                leftEl.style.borderColor = 'var(--duo-gray-border)';
-                leftEl.style.background = 'white';
-                rightEl.style.borderColor = 'var(--duo-gray-border)';
-                rightEl.style.background = 'white';
-                matchSelectedLeft = null;
-                matchSelectedRight = null;
-            }, 500);
+            matchSelectedLeft = null;
+            matchSelectedRight = null;
+            setTimeout(() => [leftEl, rightEl].forEach(el => el.classList.remove('is-wrong')), 500);
         }
     }
 }
@@ -108,7 +97,7 @@ export function startNewSession() {
     const matchesTopicAndLevel = (item) => {
         const matchesTopic = (currentTopicFilter === 'all' || (item.topic || 'General') === currentTopicFilter);
         const matchesLvl = matchesLevelAndSRS(item, currentLevel);
-        const matchesLang = ((item.lang || 'fr') === getStudyLang());
+        const matchesLang = (itemLang(item) === getStudyLang());
         return matchesTopic && matchesLvl && matchesLang;
     };
 
@@ -117,8 +106,7 @@ export function startNewSession() {
         vocabFiltered.forEach(item => {
             pool.push({ category: 'vocab', type: 'vocab_type', isSpeaking: false, data: item, score: item.score || 0 });
         });
-        let allVocabPool = db.vocab || [];
-        let vocabSource = (currentTopicFilter === 'all' ? allVocabPool : allVocabPool.filter(item => (item.topic || 'General') === currentTopicFilter)).filter(item => (item.lang || 'fr') === getStudyLang());
+        const vocabSource = vocabFiltered;
         if (vocabSource.length >= 2) {
             let numMatchExercises = Math.min(3, Math.max(1, Math.floor(vocabSource.length / 2)));
             for (let m = 0; m < numMatchExercises; m++) {
@@ -131,6 +119,14 @@ export function startNewSession() {
                 }
             }
         }
+    }
+    if(db.conversation) {
+        db.conversation.forEach(item => {
+            if (matchesTopicAndLevel(item)) {
+                pool.push({ category: 'conversation', type: 'conversation_choice', isSpeaking: false, data: item, score: item.score || 0 });
+                pool.push({ category: 'conversation', type: 'speaking', isSpeaking: true, targetText: item.answer, promptText: t('speakReply', { prompt: item.prompt }), item: item, score: item.score || 0 });
+            }
+        });
     }
     if(db.grammar) {
         db.grammar.forEach(item => {
@@ -153,7 +149,7 @@ export function startNewSession() {
                     }
                 });
                 fullSentence += norm.punct;
-                pool.push({ category: 'fill', type: 'speaking', isSpeaking: true, targetText: fullSentence.trim(), promptText: t('speakCompleteSentence', { title: item.title }), item: item, score: item.score || 0 });
+                pool.push({ category: 'fill', type: 'speaking', isSpeaking: true, targetText: fullSentence.trim(), promptText: t('speakCompleteSentence', { title: localize(item.title) }), item: item, score: item.score || 0 });
             }
         });
     }
@@ -161,7 +157,7 @@ export function startNewSession() {
         db.order.forEach(item => {
             if (matchesTopicAndLevel(item)) {
                 pool.push({ category: 'order', type: 'order', isSpeaking: false, data: item, score: item.score || 0 });
-                pool.push({ category: 'order', type: 'speaking', isSpeaking: true, targetText: item.sentence, promptText: t('speakSentence', { title: item.title }), item: item, score: item.score || 0 });
+                pool.push({ category: 'order', type: 'speaking', isSpeaking: true, targetText: item.sentence, promptText: t('speakSentence', { title: localizeTranslation(item.title) }), item: item, score: item.score || 0 });
             }
         });
     }
@@ -195,7 +191,7 @@ export function startNewSession() {
     let selectedTypes = new Set();
 
     for (let [type, items] of typesMap.entries()) {
-        if (selectedTypes.size < 5 && items.length > 0) {
+        if (selectedTypes.size < 7 && items.length > 0) {
             let item = items.shift();
             selected.push(item);
             selectedTypes.add(type);
@@ -247,6 +243,7 @@ export function startNewSession() {
     sessionQueue = orderSessionQueue(selected);
     retryQueue = [];
     isRetryMode = false;
+    sessionStats = { total: sessionQueue.length, answered: 0, firstTryAnswered: 0, firstTryCorrect: 0 };
 
     loadNextQuestion();
 }
@@ -269,9 +266,23 @@ function renderEmptySession() {
             <p style="font-size: 1.1rem; color: var(--duo-text-muted); margin-bottom: 20px;">
                 ${t('noContentForFilters')}
             </p>
-            <button class="action-btn" onclick="window.switchView('creator')">${t('btnManageContent')}</button>
+            <div class="summary-actions">
+                <button class="action-btn" onclick="window.switchView('home')">${t('backHome')}</button>
+                <button class="action-btn btn-secondary" onclick="window.switchView('creator')">${t('btnManageContent')}</button>
+            </div>
         </div>
     `;
+}
+
+function updateProgressBar() {
+    const remaining = sessionQueue.length + retryQueue.length + (isChecked ? 0 : 1);
+    const done = sessionStats.answered;
+    const pct = done + remaining > 0 ? Math.round((done / (done + remaining)) * 100) : 0;
+    const progress = Math.max(3, Math.min(100, pct));
+    const progBar = document.getElementById('progress-bar');
+    if (progBar) progBar.style.width = `${progress}%`;
+    const mobileProg = document.getElementById('progress-bar-mobile');
+    if (mobileProg) mobileProg.style.width = `${progress}%`;
 }
 
 export function loadNextQuestion() {
@@ -303,6 +314,7 @@ export function renderExercise(item) {
     actionBtn.style.opacity = '1';
     isChecked = false;
     selectedWords = [];
+    selectedChoice = null;
     questionStartTime = null;
 
     const markTimerStarted = () => {
@@ -314,13 +326,7 @@ export function renderExercise(item) {
     container.oninput = markTimerStarted;
     container.onclick = markTimerStarted;
 
-    const totalInSession = sessionQueue.length + retryQueue.length + 1;
-    const progress = Math.min(100, Math.max(5, ((20 - totalInSession) / 20) * 100));
-    
-    const progBar = document.getElementById('progress-bar');
-    if (progBar) progBar.style.width = `${progress}%`;
-    const mobileProg = document.getElementById('progress-bar-mobile');
-    if (mobileProg) mobileProg.style.width = `${progress}%`;
+    updateProgressBar();
 
     const isSpeakingBadge = item.isSpeaking ? 'speaking-badge' : '';
     const scoreVal = item.score || 0;
@@ -344,7 +350,8 @@ export function renderExercise(item) {
             ${wrapTitleWithBadge(t('writeWordInStudyLang', { lang: getStudyLangName() }))}
             <div class="vocab-card">
                 ${renderIllustrationHTML(item.data)}
-                <button class="speaker-btn hint-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.data.fr.replace(/'/g, "\\'")}')">${t('listenAudioHint')}</button>
+                <p class="vocab-translation-hint">${escapeHTML(localizeTranslation(item.data.es))}</p>
+                <button class="speaker-btn hint-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.data.fr.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">${t('listenAudioHint')}</button>
             </div>
             <input type="text" id="user-input" class="duo-input" placeholder="${t('typeInFrench')}" autocomplete="off">
         `;
@@ -364,21 +371,21 @@ export function renderExercise(item) {
                 <div style="display: flex; flex-direction: column; gap: 10px;" id="match-left-column">
                     ${item.items.map((it, idx) => `
                         ${isAudioOnly ? `
-                            <div class="match-tile" id="match-left-${idx}" onclick="window.selectMatchItem('left', ${idx}, '${it.id}'); window.speakFrench('${it.fr.replace(/'/g, "\\'")}')" style="background: white; border: 2px solid var(--duo-gray-border); border-bottom-width: 4px; border-radius: 12px; padding: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">
+                            <div class="match-tile match-tile-audio" id="match-left-${idx}" onclick="window.selectMatchItem('left', ${idx}, '${it.id}'); window.speakFrench('${it.fr.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">
                                 🔊
                             </div>
                         ` : `
-                            <div class="match-tile" id="match-left-${idx}" onclick="window.selectMatchItem('left', ${idx}, '${it.id}')" style="background: white; border: 2px solid var(--duo-gray-border); border-bottom-width: 4px; border-radius: 12px; padding: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+                            <div class="match-tile match-tile-word" id="match-left-${idx}" onclick="window.selectMatchItem('left', ${idx}, '${it.id}')">
                                 <span>${it.fr}</span>
-                                <button class="speaker-btn" style="width: 32px; height: 32px; font-size: 1rem;" onmousedown="event.preventDefault()" onclick="event.stopPropagation(); window.speakFrench('${it.fr.replace(/'/g, "\\'")}')">🔊</button>
+                                <button class="speaker-btn speaker-btn-xs" onmousedown="event.preventDefault()" onclick="event.stopPropagation(); window.speakFrench('${it.fr.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">🔊</button>
                             </div>
                         `}
                     `).join('')}
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 10px;" id="match-right-column">
                     ${shuffledRight.map((it, idx) => `
-                        <div class="match-tile" id="match-right-${idx}" onclick="window.selectMatchItem('right', ${idx}, '${it.id}')" style="background: white; border: 2px solid var(--duo-gray-border); border-bottom-width: 4px; border-radius: 12px; padding: 12px; font-weight: 800; cursor: pointer; text-align: center;">
-                            ${it.es}
+                        <div class="match-tile match-tile-center" id="match-right-${idx}" onclick="window.selectMatchItem('right', ${idx}, '${it.id}')">
+                            ${localizeTranslation(it.es)}
                         </div>
                     `).join('')}
                 </div>
@@ -392,32 +399,32 @@ export function renderExercise(item) {
                 <div class="phoneme-combined-card">
                     <div class="phoneme-header-row">
                         <span class="phoneme-symbol-text">${item.data.symbol}</span>
-                        <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.data.symbol.replace(/'/g, "\\'")}')">🔊</button>
+                        <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.data.symbol.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">🔊</button>
                     </div>
                     <div class="phoneme-example-row">
                         <div>
-                            <span style="font-size: 0.8rem; color: var(--duo-text-muted);">${t('exampleLabel')} </span>
-                            <strong style="color: var(--duo-purple-dark); font-size: 1.1rem;">${item.data.word}</strong>
-                            <span style="color: var(--duo-text-muted); font-size: 0.9rem;"> (${item.data.trans})</span>
+                            <span class="phoneme-example-label">${t('exampleLabel')} </span>
+                            <strong class="phoneme-example-word">${item.data.word}</strong>
+                            <span class="phoneme-example-trans"> (${localizeTranslation(item.data.trans)})</span>
                             ${renderMiniIllustrationHTML(item.data)}
                         </div>
-                        <button class="speaker-btn" style="width: 34px; height: 34px; font-size: 0.95rem;" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.data.word.replace(/'/g, "\\'")}')">🔊</button>
+                        <button class="speaker-btn speaker-btn-sm" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.data.word.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">🔊</button>
                     </div>
                 </div>
 
                 <div style="margin-top: 5px;">
                     <button class="mic-btn" id="mic-trigger-btn" onclick="window.toggleSpeechRecognition()">🎤</button>
                 </div>
-                <p id="speech-status" style="font-size: 0.85rem; color: var(--duo-text-muted);">${t('speakSymbolOrWord', { symbol: item.data.symbol, word: item.data.word })}</p>
+                <p id="speech-status" class="speech-status">${t('speakSymbolOrWord', { symbol: item.data.symbol, word: item.data.word })}</p>
 
                 <div class="speech-edit-container">
                     <label class="speech-edit-label">${t('whatSystemHeard')}</label>
-                    <input type="text" id="user-speech-input" class="duo-input" placeholder="${t('micOrTypePlaceholder')}" style="border-color: #ce93d8;" autocomplete="off">
+                    <input type="text" id="user-speech-input" class="duo-input speech-input" placeholder="${t('micOrTypePlaceholder')}" autocomplete="off">
                 </div>
 
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
                     <button class="skip-btn" onclick="window.skipSpeakingExercise()">${t('skipExercise')}</button>
-                    <button class="skip-btn" style="background: #f3e5f5; border-color: #ce93d8; color: var(--duo-purple-dark);" onclick="window.skipAllSpeakingExercises()">${t('skipAllSpeaking')}</button>
+                    <button class="skip-btn skip-btn-purple" onclick="window.skipAllSpeakingExercises()">${t('skipAllSpeaking')}</button>
                 </div>
             </div>
         `;
@@ -428,32 +435,66 @@ export function renderExercise(item) {
             <div class="speaking-card">
                 ${item.item ? renderIllustrationHTML(item.item) : '<div style="font-size: 3.5rem;">🗣️</div>'}
                 <h3 style="font-size: 1.2rem;">${item.promptText}</h3>
-                <p style="color: var(--duo-purple-dark); font-weight: 800; font-size: 1.3rem;">"${item.targetText}"</p>
-                <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.targetText.replace(/'/g, "\\'")}')">🔊</button>
+                <p class="speaking-target">"${item.targetText}"</p>
+                <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.targetText.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">🔊</button>
                 
                 <div style="margin-top: 10px;">
                     <button class="mic-btn" id="mic-trigger-btn" onclick="window.toggleSpeechRecognition()">🎤</button>
                 </div>
-                <p id="speech-status" style="font-size: 0.85rem; color: var(--duo-text-muted);">${t('micToSpeakIn', { lang: getStudyLangName() })}</p>
+                <p id="speech-status" class="speech-status">${t('micToSpeakIn', { lang: getStudyLangName() })}</p>
 
                 <div class="speech-edit-container">
                     <label class="speech-edit-label">${t('whatSystemHeard')}</label>
-                    <input type="text" id="user-speech-input" class="duo-input" placeholder="${t('micOrEditPlaceholder')}" style="border-color: #ce93d8;" autocomplete="off">
+                    <input type="text" id="user-speech-input" class="duo-input speech-input" placeholder="${t('micOrEditPlaceholder')}" autocomplete="off">
                 </div>
 
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
                     <button class="skip-btn" onclick="window.skipSpeakingExercise()">${t('skipExercise')}</button>
-                    <button class="skip-btn" style="background: #f3e5f5; border-color: #ce93d8; color: var(--duo-purple-dark);" onclick="window.skipAllSpeakingExercises()">${t('skipAllSpeaking')}</button>
+                    <button class="skip-btn skip-btn-purple" onclick="window.skipAllSpeakingExercises()">${t('skipAllSpeaking')}</button>
                 </div>
             </div>
         `;
     }
+    else if (item.type === 'conversation_choice') {
+        const conv = item.data;
+        if (!item.options) {
+            item.options = [conv.answer, ...(conv.wrong || [])].sort(() => Math.random() - 0.5);
+        }
+        const promptTr = localizeTranslation(conv.promptTr);
+        container.innerHTML = `
+            ${wrapTitleWithBadge(t('conversationTitle'))}
+            ${conv.context ? `<div class="chat-context">🎬 ${escapeHTML(localize(conv.context))}</div>` : ''}
+            <div class="chat-row">
+                <div class="chat-avatar">${conv.img || '🧑'}</div>
+                <div class="chat-bubble">
+                    <div class="chat-bubble-text">${escapeHTML(conv.prompt)}</div>
+                    <div class="chat-bubble-actions">
+                        <button class="speaker-btn speaker-btn-sm" onmousedown="event.preventDefault()" onclick="window.speakFrench('${jsArg(conv.prompt)}')">🔊</button>
+                        ${promptTr ? `<button class="link-btn" id="chat-tr-toggle" onclick="window.toggleChatTranslation()">${t('showTranslation')}</button>` : ''}
+                    </div>
+                    ${promptTr ? `<div class="chat-translation" id="chat-translation" hidden>${escapeHTML(promptTr)}</div>` : ''}
+                </div>
+            </div>
+            <p class="chat-question">${t('chooseBestReply')}</p>
+            <div class="choice-list">
+                ${item.options.map((opt, idx) => `
+                    <button class="choice-btn" id="choice-${idx}" onclick="window.selectChoice(${idx})">
+                        <span class="choice-key">${idx + 1}</span>
+                        <span class="choice-text">${escapeHTML(opt)}</span>
+                    </button>
+                `).join('')}
+            </div>
+            <p class="keyboard-hint">${t('keyboardHint')}</p>
+        `;
+        setTimeout(() => speakFrench(conv.prompt), 400);
+    }
     else if (item.type === 'grammar') {
         const prefilled = item.prefilled || {};
+        const pronouns = getPronouns(itemLang(item.data));
         container.innerHTML = `
             ${wrapTitleWithBadge(t('completeConjugationTable'))}
             <div class="instruction-box">
-                <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.data.verb.replace(/'/g, "\\'")}')">🔊</button>
+                <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.data.verb.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">🔊</button>
                 <div>
                     <p style="color: var(--duo-text-muted); margin:0;">${t('verbLabel')}: <strong>${item.data.verb}</strong> | ${t('tenseLabel')}: <strong>${item.data.tense}</strong></p>
                 </div>
@@ -464,12 +505,12 @@ export function renderExercise(item) {
                     <span class="grammar-badge">${item.data.verb}</span>
                 </div>
                 <table class="conjugation-table">
-                    <tr><td class="pronoun-cell">Je / J'</td><td><input type="text" id="gram-je" class="duo-input" value="${prefilled.je || ''}" ${prefilled.je ? 'style="border-color: var(--duo-green); background: var(--duo-green-light);" disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
-                    <tr><td class="pronoun-cell">Tu</td><td><input type="text" id="gram-tu" class="duo-input" value="${prefilled.tu || ''}" ${prefilled.tu ? 'style="border-color: var(--duo-green); background: var(--duo-green-light);" disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
-                    <tr><td class="pronoun-cell">Il / Elle / On</td><td><input type="text" id="gram-il" class="duo-input" value="${prefilled.il || ''}" ${prefilled.il ? 'style="border-color: var(--duo-green); background: var(--duo-green-light);" disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
-                    <tr><td class="pronoun-cell">Nous</td><td><input type="text" id="gram-nous" class="duo-input" value="${prefilled.nous || ''}" ${prefilled.nous ? 'style="border-color: var(--duo-green); background: var(--duo-green-light);" disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
-                    <tr><td class="pronoun-cell">Vous</td><td><input type="text" id="gram-vous" class="duo-input" value="${prefilled.vous || ''}" ${prefilled.vous ? 'style="border-color: var(--duo-green); background: var(--duo-green-light);" disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
-                    <tr><td class="pronoun-cell">Ils / Elles</td><td><input type="text" id="gram-ils" class="duo-input" value="${prefilled.ils || ''}" ${prefilled.ils ? 'style="border-color: var(--duo-green); background: var(--duo-green-light);" disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
+                    <tr><td class="pronoun-cell">${pronouns.je}</td><td><input type="text" id="gram-je" class="duo-input" value="${prefilled.je || ''}" ${prefilled.je ? 'disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
+                    <tr><td class="pronoun-cell">${pronouns.tu}</td><td><input type="text" id="gram-tu" class="duo-input ${prefilled.tu ? 'is-correct' : ''}" value="${prefilled.tu || ''}" ${prefilled.tu ? 'disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
+                    <tr><td class="pronoun-cell">${pronouns.il}</td><td><input type="text" id="gram-il" class="duo-input ${prefilled.il ? 'is-correct' : ''}" value="${prefilled.il || ''}" ${prefilled.il ? 'disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
+                    <tr><td class="pronoun-cell">${pronouns.nous}</td><td><input type="text" id="gram-nous" class="duo-input ${prefilled.nous ? 'is-correct' : ''}" value="${prefilled.nous || ''}" ${prefilled.nous ? 'disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
+                    <tr><td class="pronoun-cell">${pronouns.vous}</td><td><input type="text" id="gram-vous" class="duo-input ${prefilled.vous ? 'is-correct' : ''}" value="${prefilled.vous || ''}" ${prefilled.vous ? 'disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
+                    <tr><td class="pronoun-cell">${pronouns.ils}</td><td><input type="text" id="gram-ils" class="duo-input ${prefilled.ils ? 'is-correct' : ''}" value="${prefilled.ils || ''}" ${prefilled.ils ? 'disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
                 </table>
             </div>
         `;
@@ -488,7 +529,7 @@ export function renderExercise(item) {
         }
 
         container.innerHTML = `
-            ${wrapTitleWithBadge(item.data.title)}
+            ${wrapTitleWithBadge(localize(item.data.title))}
             ${renderIllustrationHTML(item.data)}
             <div class="fill-blank-sentence">
                 ${sentenceHTML}
@@ -500,9 +541,9 @@ export function renderExercise(item) {
         const allWords = [...targetWords, ...item.data.extras].sort(() => Math.random() - 0.5);
 
         container.innerHTML = `
-            ${wrapTitleWithBadge(item.data.title)}
+            ${wrapTitleWithBadge(localizeTranslation(item.data.title))}
             <div class="instruction-box">
-                <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.data.sentence.replace(/'/g, "\\'")}')">🔊</button>
+                <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.data.sentence.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">🔊</button>
             </div>
             ${item.data.img || item.data.imgDataUrl || item.data.svgCode ? renderIllustrationHTML(item.data) : ''}
             <div class="sentence-target-area" id="target-word-area"></div>
@@ -523,6 +564,31 @@ export function renderExercise(item) {
         }, 60);
     }
 }
+
+export function selectChoice(idx) {
+    if (isChecked || !currentItem || currentItem.type !== 'conversation_choice') return;
+    if (!questionStartTime) questionStartTime = Date.now();
+    selectedChoice = idx;
+    document.querySelectorAll('.choice-btn').forEach((btn, i) => btn.classList.toggle('selected', i === idx));
+    speakFrench(currentItem.options[idx]);
+}
+
+export function toggleChatTranslation() {
+    const el = document.getElementById('chat-translation');
+    const btn = document.getElementById('chat-tr-toggle');
+    if (!el) return;
+    el.hidden = !el.hidden;
+    if (btn) btn.textContent = el.hidden ? t('showTranslation') : t('hideTranslation');
+}
+
+// Teclas 1-9 para elegir respuesta en conversaciones
+document.addEventListener('keydown', (e) => {
+    if (!currentItem || currentItem.type !== 'conversation_choice' || isChecked) return;
+    const practiceView = document.getElementById('view-practice');
+    if (!practiceView || !practiceView.classList.contains('active')) return;
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && currentItem.options && n <= currentItem.options.length) selectChoice(n - 1);
+});
 
 export function skipSpeakingExercise() {
     loadNextQuestion();
@@ -583,7 +649,7 @@ function checkAnswer() {
     if (currentItem.type === 'vocab_type') {
         const val = document.getElementById('user-input').value.trim();
         isCorrect = (cleanStr(val) === cleanStr(currentItem.data.fr));
-        correctSolutionText = `${currentItem.data.fr} = ${currentItem.data.es}`;
+        correctSolutionText = `${currentItem.data.fr} = ${localizeTranslation(currentItem.data.es)}`;
         textToSpeak = currentItem.data.fr;
     } else if (currentItem.type === 'phoneme_speak') {
         const val = document.getElementById('user-speech-input').value.trim();
@@ -592,7 +658,7 @@ function checkAnswer() {
         const cleanWord = cleanStr(currentItem.data.word);
 
         isCorrect = (cleanInput.length > 0 && (cleanInput.includes(cleanSym) || cleanInput.includes(cleanWord) || cleanSym.includes(cleanInput)));
-        correctSolutionText = t('phonemeSolution', { symbol: currentItem.data.symbol, word: currentItem.data.word, trans: currentItem.data.trans });
+        correctSolutionText = t('phonemeSolution', { symbol: currentItem.data.symbol, word: currentItem.data.word, trans: localizeTranslation(currentItem.data.trans) });
         textToSpeak = currentItem.data.word;
     } else if (currentItem.type === 'speaking') {
         const val = document.getElementById('user-speech-input').value.trim();
@@ -604,6 +670,7 @@ function checkAnswer() {
         textToSpeak = currentItem.targetText;
     } else if (currentItem.type === 'grammar') {
         const c = currentItem.data.conjugations;
+        const pronouns = getPronouns(itemLang(currentItem.data));
         if (!currentItem.prefilled) currentItem.prefilled = {};
         const inputs = {
             je: document.getElementById('gram-je'),
@@ -631,17 +698,14 @@ function checkAnswer() {
             if (cleanStr(userVals[k]) === cleanStr(c[k])) {
                 currentItem.prefilled[k] = c[k];
                 if (inputs[k]) {
-                    inputs[k].style.borderColor = 'var(--duo-green)';
-                    inputs[k].style.background = 'var(--duo-green-light)';
+                    inputs[k].classList.remove('is-wrong');
+                    inputs[k].classList.add('is-correct');
                     inputs[k].disabled = true;
                 }
             } else {
                 allGrammarCorrect = false;
-                incorrectConjugations.push({ pronoun: k, correct: c[k] });
-                if (inputs[k]) {
-                    inputs[k].style.borderColor = 'var(--duo-red)';
-                    inputs[k].style.background = 'var(--duo-red-light)';
-                }
+                incorrectConjugations.push({ pronoun: pronouns[k].split(' / ')[0].replace(/'$/, ''), correct: c[k] });
+                if (inputs[k]) inputs[k].classList.add('is-wrong');
             }
         });
 
@@ -661,9 +725,10 @@ function checkAnswer() {
         if (fillInputs.length > 0) {
             fillInputs.forEach((inp, idx) => {
                 const expected = answers[idx] || answers[0] || '';
-                if (cleanStr(inp.value) !== expected) {
-                    allCorrect = false;
-                }
+                const ok = cleanStr(inp.value) === expected;
+                inp.classList.toggle('is-correct', ok);
+                inp.classList.toggle('is-wrong', !ok);
+                if (!ok) allCorrect = false;
             });
         }
         isCorrect = allCorrect;
@@ -685,10 +750,22 @@ function checkAnswer() {
         isCorrect = (cleanStr(userSentence) === cleanStr(currentItem.data.sentence));
         correctSolutionText = currentItem.data.sentence;
         textToSpeak = currentItem.data.sentence;
+    } else if (currentItem.type === 'conversation_choice') {
+        if (selectedChoice === null) return;
+        const chosen = currentItem.options[selectedChoice];
+        isCorrect = (chosen === currentItem.data.answer);
+        const answerTr = localizeTranslation(currentItem.data.answerTr);
+        correctSolutionText = answerTr ? `${currentItem.data.answer} (${answerTr})` : currentItem.data.answer;
+        textToSpeak = currentItem.data.answer;
+        document.querySelectorAll('.choice-btn').forEach((btn, i) => {
+            btn.disabled = true;
+            if (currentItem.options[i] === currentItem.data.answer) btn.classList.add('correct');
+            else if (i === selectedChoice) btn.classList.add('incorrect');
+        });
     } else if (currentItem.type === 'vocab_match_fr' || currentItem.type === 'vocab_match_audio') {
         const totalItems = currentItem.items.length;
         isCorrect = (matchedPairs.length === totalItems);
-        correctSolutionText = currentItem.items.map(i => `${i.fr} = ${i.es}`).join(', ');
+        correctSolutionText = currentItem.items.map(i => `${i.fr} = ${localizeTranslation(i.es)}`).join(', ');
         textToSpeak = currentItem.items.map(i => i.fr).join('. ');
     }
 
@@ -703,8 +780,9 @@ function checkAnswer() {
         } else {
             const isGrammar = (currentItem.type === 'grammar');
             const isPronunciation = (currentItem.type === 'speaking' || currentItem.type === 'phoneme_speak');
-            const fastLimit = isGrammar ? 35 : (isPronunciation ? 20 : 10);
-            const slowLimit = isGrammar ? 50 : (isPronunciation ? 30 : 15);
+            const isConversation = (currentItem.type === 'conversation_choice');
+            const fastLimit = isGrammar ? 35 : (isPronunciation || isConversation ? 20 : 10);
+            const slowLimit = isGrammar ? 50 : (isPronunciation || isConversation ? 30 : 15);
 
             if (currentScore === 0) {
                 itemObj.score = 1;
@@ -730,6 +808,10 @@ function checkAnswer() {
         }
     }
     saveDB();
+
+    sessionStats.answered++;
+    if (!isRetryMode) sessionStats.firstTryAnswered++;
+    if (isCorrect && !isRetryMode) sessionStats.firstTryCorrect++;
 
     if (isCorrect && textToSpeak) {
         speakFrench(textToSpeak);
@@ -762,6 +844,7 @@ function checkAnswer() {
     }
 
     isChecked = true;
+    updateProgressBar();
 }
 
 function finishSession() {
@@ -776,6 +859,7 @@ function finishSession() {
     const mobileProg = document.getElementById('progress-bar-mobile');
     if (mobileProg) mobileProg.style.width = '100%';
 
+    const accuracy = sessionStats.firstTryAnswered > 0 ? Math.round((sessionStats.firstTryCorrect / sessionStats.firstTryAnswered) * 100) : 0;
     container.innerHTML = `
         <div class="summary-card">
             <div class="summary-icon">🎉</div>
@@ -783,10 +867,16 @@ function finishSession() {
             <p style="font-size: 1.1rem; color: var(--duo-text-muted); margin-bottom: 20px;">
                 ${t('sessionSummaryText')}
             </p>
-            <div style="background: var(--duo-gray-light); padding: 15px; border-radius: 12px; margin-bottom: 25px; text-align: left;">
-                <p><strong>${t('sessionsCompleted')}</strong> ${sessionCount}</p>
+            <div class="stats-grid stats-grid-3">
+                <div class="stat-tile"><span class="stat-value">${sessionStats.firstTryAnswered}</span><span class="stat-label">${t('summaryReviewed')}</span></div>
+                <div class="stat-tile"><span class="stat-value">${sessionStats.firstTryCorrect}</span><span class="stat-label">${t('summaryCorrect')}</span></div>
+                <div class="stat-tile"><span class="stat-value">${accuracy}%</span><span class="stat-label">${t('summaryAccuracy')}</span></div>
             </div>
-            <button class="action-btn" onclick="window.startNewSession()">${t('startNewSession')}</button>
+            <p style="color: var(--duo-text-muted); margin-bottom: 20px;"><strong>${t('sessionsCompleted')}</strong> ${sessionCount}</p>
+            <div class="summary-actions">
+                <button class="action-btn" onclick="window.startNewSession()">${t('startNewSession')}</button>
+                <button class="action-btn btn-secondary" onclick="window.switchView('home')">${t('backHome')}</button>
+            </div>
         </div>
     `;
 }
@@ -800,3 +890,5 @@ window.toggleWord = toggleWord;
 window.removeSelectedWord = removeSelectedWord;
 window.handleDrawerAction = handleDrawerAction;
 window.startNewSession = startNewSession;
+window.selectChoice = selectChoice;
+window.toggleChatTranslation = toggleChatTranslation;

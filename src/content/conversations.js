@@ -214,5 +214,99 @@ export const CONVERSATION_SCENES = [
             it: { prompt: "Sembra che alla fine sia andato tutto liscio come l'olio, no?", answer: 'Sì, anche se in certi momenti era appeso a un filo.', wrong: ["Sì, l'olio è in cucina.", 'No, il filo è troppo corto.'] },
             de: { prompt: 'Am Ende ist ja doch alles wie am Schnürchen gelaufen, oder?', answer: 'Ja, obwohl es zeitweise an einem seidenen Faden hing.', wrong: ['Ja, ich habe ein neues Schnürchen gekauft.', 'Nein, der Faden ist zu kurz.'] }
         }
+    },
+
+    // --- Escenas añadidas para tener al menos 5 por nivel ---
+    // A1
+    {
+        key: 'age', img: '🎂', level: 'A1',
+        context: { es: 'Alguien te pregunta tu edad.', en: 'Someone asks how old you are.', fr: "Quelqu'un te demande ton âge." },
+        lines: {
+            es: { prompt: '¿Cuántos años tienes?', answer: 'Tengo veinticinco años.', wrong: ['Me llamo Pedro.', 'Vivo en Madrid.'] },
+            en: { prompt: 'How old are you?', answer: 'I am twenty-five years old.', wrong: ['My name is Pedro.', 'I live in Madrid.'] },
+            fr: { prompt: 'Quel âge as-tu ?', answer: "J'ai vingt-cinq ans.", wrong: ["Je m'appelle Pedro.", "J'habite à Madrid."] },
+            it: { prompt: 'Quanti anni hai?', answer: 'Ho venticinque anni.', wrong: ['Mi chiamo Pedro.', 'Abito a Madrid.'] },
+            de: { prompt: 'Wie alt bist du?', answer: 'Ich bin fünfundzwanzig Jahre alt.', wrong: ['Ich heiße Pedro.', 'Ich wohne in Madrid.'] }
+        }
+    },
+    {
+        key: 'family', img: '👨‍👩‍👧', level: 'A1',
+        context: { es: 'Un nuevo amigo te pregunta por tu familia.', en: 'A new friend asks about your family.', fr: 'Un nouvel ami te pose des questions sur ta famille.' },
+        lines: {
+            es: { prompt: '¿Tienes hermanos?', answer: 'Sí, tengo una hermana.', wrong: ['Sí, tengo veinte años.', 'No, me llamo Luis.'] },
+            en: { prompt: 'Do you have any brothers or sisters?', answer: 'Yes, I have a sister.', wrong: ['Yes, I am twenty years old.', 'No, my name is Luis.'] },
+            fr: { prompt: 'Tu as des frères et sœurs ?', answer: "Oui, j'ai une sœur.", wrong: ["Oui, j'ai vingt ans.", "Non, je m'appelle Luis."] },
+            it: { prompt: 'Hai fratelli o sorelle?', answer: 'Sì, ho una sorella.', wrong: ["Sì, ho vent'anni.", 'No, mi chiamo Luis.'] },
+            de: { prompt: 'Hast du Geschwister?', answer: 'Ja, ich habe eine Schwester.', wrong: ['Ja, ich bin zwanzig Jahre alt.', 'Nein, ich heiße Luis.'] }
+        }
+    },
+    // A2
+    {
+        key: 'bus', img: '🚌', level: 'A2',
+        context: { es: 'Estás en la parada del autobús.', en: "You're at the bus stop.", fr: "Tu es à l'arrêt de bus." },
+        lines: {
+            es: { prompt: '¿A qué hora sale el próximo autobús?', answer: 'Sale a las diez y cuarto.', wrong: ['Salió ayer a las diez.', 'El autobús es azul.'] },
+            en: { prompt: 'What time does the next bus leave?', answer: 'It leaves at a quarter past ten.', wrong: ['It left yesterday at ten.', 'The bus is blue.'] },
+            fr: { prompt: 'À quelle heure part le prochain bus ?', answer: 'Il part à dix heures et quart.', wrong: ['Il est parti hier à dix heures.', 'Le bus est bleu.'] },
+            it: { prompt: 'A che ora parte il prossimo autobus?', answer: 'Parte alle dieci e un quarto.', wrong: ['È partito ieri alle dieci.', "L'autobus è blu."] },
+            de: { prompt: 'Wann fährt der nächste Bus?', answer: 'Er fährt um Viertel nach zehn.', wrong: ['Er ist gestern um zehn gefahren.', 'Der Bus ist blau.'] }
+        }
+    },
+    {
+        key: 'hobbies', img: '🏊', level: 'A2',
+        context: { es: 'Hablas de tus aficiones con un compañero.', en: 'You talk about hobbies with a classmate.', fr: 'Tu parles de tes loisirs avec un camarade.' },
+        lines: {
+            es: { prompt: '¿Qué te gusta hacer en tu tiempo libre?', answer: 'Me gusta leer y nadar.', wrong: ['Me gusta el tiempo libre.', 'Ayer leí y nadé mucho.'] },
+            en: { prompt: 'What do you like doing in your free time?', answer: 'I like reading and swimming.', wrong: ['I like the free time.', 'Yesterday I read and swam a lot.'] },
+            fr: { prompt: "Qu'est-ce que tu aimes faire pendant ton temps libre ?", answer: "J'aime lire et nager.", wrong: ["J'aime le temps libre.", "Hier, j'ai beaucoup lu et nagé."] },
+            it: { prompt: 'Cosa ti piace fare nel tempo libero?', answer: 'Mi piace leggere e nuotare.', wrong: ['Mi piace il tempo libero.', 'Ieri ho letto e nuotato molto.'] },
+            de: { prompt: 'Was machst du gern in deiner Freizeit?', answer: 'Ich lese und schwimme gern.', wrong: ['Ich mag die Freizeit.', 'Gestern habe ich viel gelesen und bin geschwommen.'] }
+        }
+    },
+    // B1
+    {
+        key: 'lost_wallet', img: '👛', level: 'B1',
+        context: { es: 'Has perdido la cartera y hablas con la policía.', en: "You've lost your wallet and are talking to the police.", fr: 'Tu as perdu ton portefeuille et tu parles à la police.' },
+        lines: {
+            es: { prompt: '¿Dónde vio su cartera por última vez?', answer: 'Creo que la dejé en el autobús esta mañana.', wrong: ['Creo que la dejaré en el autobús mañana.', 'Mi cartera tiene muchos colores.'] },
+            en: { prompt: 'Where did you last see your wallet?', answer: 'I think I left it on the bus this morning.', wrong: ['I think I will leave it on the bus tomorrow.', 'My wallet has lots of colours.'] },
+            fr: { prompt: 'Où avez-vous vu votre portefeuille pour la dernière fois ?', answer: "Je crois que je l'ai laissé dans le bus ce matin.", wrong: ['Je crois que je le laisserai dans le bus demain.', 'Mon portefeuille a beaucoup de couleurs.'] },
+            it: { prompt: "Dove ha visto il portafoglio l'ultima volta?", answer: "Credo di averlo lasciato sull'autobus stamattina.", wrong: ["Credo che lo lascerò sull'autobus domani.", 'Il mio portafoglio ha tanti colori.'] },
+            de: { prompt: 'Wo haben Sie Ihre Geldbörse zuletzt gesehen?', answer: 'Ich glaube, ich habe sie heute Morgen im Bus liegen lassen.', wrong: ['Ich glaube, ich werde sie morgen im Bus lassen.', 'Meine Geldbörse hat viele Farben.'] }
+        }
+    },
+    {
+        key: 'advice', img: '😮‍💨', level: 'B1',
+        context: { es: 'Un amigo está estresado por el trabajo.', en: 'A friend is stressed about work.', fr: 'Un ami est stressé par son travail.' },
+        lines: {
+            es: { prompt: 'Estoy muy estresado con el trabajo.', answer: 'Deberías tomarte unos días de descanso.', wrong: ['Deberías tomado unos días de descanso.', 'Me alegro de que estés estresado.'] },
+            en: { prompt: "I'm really stressed about work.", answer: 'You should take a few days off.', wrong: ['You should took a few days off.', "I'm glad you're stressed."] },
+            fr: { prompt: 'Je suis très stressé par le travail.', answer: 'Tu devrais prendre quelques jours de repos.', wrong: ['Tu devrais pris quelques jours de repos.', 'Je suis content que tu sois stressé.'] },
+            it: { prompt: 'Sono molto stressato per il lavoro.', answer: 'Dovresti prenderti qualche giorno di riposo.', wrong: ['Dovresti preso qualche giorno di riposo.', 'Sono contento che tu sia stressato.'] },
+            de: { prompt: 'Ich bin wegen der Arbeit total gestresst.', answer: 'Du solltest ein paar Tage freinehmen.', wrong: ['Du solltest ein paar Tage freigenommen.', 'Schön, dass du gestresst bist.'] }
+        }
+    },
+    // B2
+    {
+        key: 'neighbour', img: '🎶', level: 'B2',
+        context: { es: 'Tu vecino se disculpa por el ruido.', en: 'Your neighbour apologises for the noise.', fr: "Ton voisin s'excuse pour le bruit." },
+        lines: {
+            es: { prompt: 'Perdona, ¿te molestó la música anoche?', answer: 'Un poco, la verdad; te agradecería que la bajaras después de las once.', wrong: ['Un poco; te agradecería que la bajas después de las once.', 'Me encanta la música clásica.'] },
+            en: { prompt: 'Sorry, did the music bother you last night?', answer: "A little, to be honest; I'd appreciate it if you turned it down after eleven.", wrong: ["A little; I'd appreciate it if you will turn it down after eleven.", 'I love classical music.'] },
+            fr: { prompt: 'Désolé, la musique vous a dérangé hier soir ?', answer: "Un peu, pour être honnête ; j'apprécierais que vous la baissiez après onze heures.", wrong: ["Un peu ; j'apprécierais que vous la baissez après onze heures.", "J'adore la musique classique."] },
+            it: { prompt: 'Scusa, la musica ti ha dato fastidio ieri sera?', answer: "Un po', a dire il vero; ti sarei grato se la abbassassi dopo le undici.", wrong: ["Un po'; ti sarei grato se la abbassi dopo le undici.", 'Adoro la musica classica.'] },
+            de: { prompt: 'Entschuldigung, hat dich die Musik gestern Abend gestört?', answer: 'Ehrlich gesagt ein bisschen; ich wäre dir dankbar, wenn du sie nach elf leiser machen würdest.', wrong: ['Ein bisschen; ich bin dir dankbar, wenn du sie gestern leiser machst.', 'Ich liebe klassische Musik.'] }
+        }
+    },
+    {
+        key: 'wrong_bill', img: '🧾', level: 'B2',
+        context: { es: 'Reclamas una factura incorrecta en atención al cliente.', en: "You're disputing a wrong bill with customer service.", fr: 'Tu contestes une facture erronée auprès du service client.' },
+        lines: {
+            es: { prompt: '¿Cuál es el problema con su factura?', answer: 'Me han cobrado dos veces el mismo servicio.', wrong: ['Me cobrarían si lo habría pagado.', 'La factura es muy bonita.'] },
+            en: { prompt: "What's the problem with your bill?", answer: "I've been charged twice for the same service.", wrong: ['I would be charged if I would have paid.', 'The bill is very pretty.'] },
+            fr: { prompt: 'Quel est le problème avec votre facture ?', answer: "On m'a facturé deux fois le même service.", wrong: ["On me facturerait si j'aurais payé.", 'La facture est très jolie.'] },
+            it: { prompt: 'Qual è il problema con la sua bolletta?', answer: 'Mi avete addebitato due volte lo stesso servizio.', wrong: ['Mi addebitereste se avrei pagato.', 'La bolletta è molto carina.'] },
+            de: { prompt: 'Was ist das Problem mit Ihrer Rechnung?', answer: 'Mir wurde dieselbe Leistung zweimal berechnet.', wrong: ['Man würde mir berechnen, wenn ich bezahlt würde.', 'Die Rechnung ist sehr hübsch.'] }
+        }
     }
 ];

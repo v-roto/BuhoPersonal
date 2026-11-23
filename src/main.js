@@ -1,7 +1,7 @@
 // --- Punto de Entrada Principal (Main Module) ---
 
 // Se comprueba antes de que cualquier módulo guarde datos: decide si mostrar la bienvenida
-const hadStoredData = !!localStorage.getItem('duo_french_db_v5');
+const hadStoredData = !!(localStorage.getItem('duo_french_db_v5') || localStorage.getItem('duo_french_db_v4'));
 
 import { startNewSession, handleDrawerAction } from './exercises.js';
 import { renderCreatorLists, populateTopicDropdown, updateCreatorExamples, initCreatorView } from './creator.js';

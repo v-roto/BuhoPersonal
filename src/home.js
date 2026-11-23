@@ -1,7 +1,7 @@
 // --- Módulo de Inicio (panel) y bienvenida inicial ---
 
-import { db, sessionCount, itemLang } from './state.js';
-import { getLevelFilter, isItemDue, matchesLevelAndSRS, isLevelUnlocked } from './levels.js';
+import { db, sessionCount, itemLang, practiceFilter } from './state.js';
+import { getLevelFilter } from './levels.js';
 import { CONTENT_CATEGORIES, STUDY_LANGS } from './content/index.js';
 import { t, getStudyLang, getUiLang, getLangName } from './i18n.js';
 import { flagSVG } from './flags.js';
@@ -53,8 +53,9 @@ export function renderHome({ onPickLang }) {
     const lang = getStudyLang();
     const level = getLevelFilter();
     const items = itemsForLang(lang);
-    const unlockedItems = items.filter(i => isLevelUnlocked(i.level || 'A1', lang));
-    const due = unlockedItems.filter(i => matchesLevelAndSRS(i, level) && isItemDue(i)).length;
+    // Pendientes: misma regla que la práctica
+    const isDue = practiceFilter(lang, level);
+    const due = CONTENT_CATEGORIES.reduce((n, cat) => n + (db[cat] || []).filter(i => isDue(cat, i)).length, 0);
     const inLevel = items.filter(i => (i.level || 'A1') === level).length;
     const mastered = items.filter(i => (i.score || 0) >= 4).length;
 

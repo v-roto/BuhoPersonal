@@ -329,8 +329,10 @@ function renderQuestion() {
         <h2 class="exam-question">${escapeHTML(q.title)}</h2>
         ${questionBodyHTML(q)}
         <div class="exam-feedback" id="exam-feedback" hidden></div>
-        <button class="action-btn exam-action" id="exam-action" ${q.kind === 'write' ? '' : 'disabled'}>${t('check')}</button>
-        ${q.kind === 'mc' ? `<p class="keyboard-hint">${t('examKeyboardHint')}</p>` : ''}`;
+        ${q.kind === 'mc' ? `<p class="keyboard-hint">${t('examKeyboardHint')}</p>` : ''}
+        <div class="exam-action-bar">
+            <button class="action-btn exam-action" id="exam-action" ${q.kind === 'write' ? '' : 'disabled'}>${t('check')}</button>
+        </div>`;
 
     $('exam-action').addEventListener('click', handleAction);
     if (q.kind === 'mc') {
@@ -480,6 +482,7 @@ function checkAnswer() {
             ? `✓ ${t('excellent')}`
             : `✕ ${t('examCorrectWas')} <strong>${escapeHTML(detail)}</strong>${exam.lives > 0 ? ` · ${t('examLivesLeft', { n: exam.lives })}` : ''}`;
     }
+    fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     document.querySelector('#exam-container .exam-hearts').innerHTML = heartsHTML();
     const action = $('exam-action');
     action.disabled = false;

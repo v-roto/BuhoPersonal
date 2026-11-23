@@ -1,7 +1,7 @@
 // --- Registro de paquetes de contenido por idioma de estudio ---
 // Para añadir un idioma:
 //   1. crea `src/content/<código>.js` con la misma forma que fr.js,
-//   2. añade la columna del idioma en vocabulary.js y conversations.js,
+//   2. añade la columna del idioma en vocabulary.js, conversations.js y sentences.js,
 //   3. regístralo en LANG_PACKS.
 
 import fr from './fr.js';
@@ -11,6 +11,7 @@ import it from './it.js';
 import de from './de.js';
 import { VOCAB_CONCEPTS } from './vocabulary.js';
 import { CONVERSATION_SCENES } from './conversations.js';
+import { ORDER_SENTENCES } from './sentences.js';
 
 const LANG_PACKS = { fr, en, es, it, de };
 
@@ -30,18 +31,30 @@ function pickUiLangs(source, field) {
     return out;
 }
 
+// "Coche|Auto|Carro" → principal "Coche" y alternativas ["Auto", "Carro"]
+function splitAlts(text) {
+    const [main, ...alt] = String(text || '').split('|').map(a => a.trim());
+    return { main, alt };
+}
+
 function vocabId(concept, lang) {
     if (concept.legacy) return lang === 'fr' ? `v${concept.legacy}` : `${lang}_v${concept.legacy}`;
     return `${lang}_v_${concept.key}`;
 }
 
 function buildVocab(lang) {
-    return VOCAB_CONCEPTS.filter(c => c.words[lang]).map(c => ({
-        id: vocabId(c, lang),
-        fr: c.words[lang],                 // palabra en el idioma de estudio (nombre histórico del campo)
-        es: pickUiLangs(c.words),          // traducciones por idioma de interfaz
-        img: c.img, topic: c.topic, level: c.level
-    }));
+    return VOCAB_CONCEPTS.filter(c => c.words[lang]).map(c => {
+        const { main, alt } = splitAlts(c.words[lang]);
+        const tr = {};
+        UI_LANGS.forEach(l => { if (c.words[l]) tr[l] = splitAlts(c.words[l]).main; });
+        return {
+            id: vocabId(c, lang),
+            fr: main,                      // palabra en el idioma de estudio (nombre histórico del campo)
+            ...(alt.length ? { alt } : {}),  // otras respuestas válidas al escribirla
+            es: tr,                        // traducciones por idioma de interfaz
+            img: c.img, topic: c.topic, level: c.level
+        };
+    });
 }
 
 function buildConversations(lang) {
@@ -82,6 +95,37 @@ function buildFillWrite(lang, rows = []) {
     }));
 }
 
+// Conjugación: [nivel, verbo, tiempo, "formas en el orden de CONJUGATION_KEYS separadas por |"]
+// (una persona con varias formas válidas: "suis allé / suis allée")
+function buildGrammar(lang, rows = []) {
+    return rows.map(([level, verb, tense, forms]) => {
+        // "|" separa personas; " / " dentro de una persona separa respuestas válidas
+        const list = forms.split('|').map(f => f.split(' / ').map(a => a.trim()).join('|'));
+        const conjugations = {};
+        CONJUGATION_KEYS.forEach((k, i) => { conjugations[k] = list[i]; });
+        return { id: `${lang}_gr_${stableId(verb + '|' + tense)}`, verb, tense, topic: 'verbs', level, conjugations };
+    });
+}
+
+// Fonemas: [nivel, símbolo, palabra, emoji, "traducción es|en|fr"]
+function buildPhonemes(lang, rows = []) {
+    return rows.map(([level, symbol, word, img, tr]) => {
+        const [es, en, fr] = tr.split('|');
+        return { id: `${lang}_ph_${stableId(symbol + '|' + word)}`, symbol, word, trans: { es, en, fr }, img, topic: 'phonetics', level };
+    });
+}
+
+// Ordenar palabras: frases compartidas (sentences.js); el título es la frase en el idioma de traducción
+function buildOrder(lang) {
+    return ORDER_SENTENCES.filter(x => x.lines[lang]).map(x => ({
+        id: `${lang}_o_${x.key}`,
+        title: { es: `Traduce: «${x.lines.es[0]}»`, en: `Translate: "${x.lines.en[0]}"`, fr: `Traduis : « ${x.lines.fr[0]} »` },
+        sentence: x.lines[lang][0], extras: x.lines[lang][1].split('|'),
+        ...(x.lines[lang][2] ? { alt: x.lines[lang][2] } : {}),   // otros órdenes válidos
+        topic: x.topic || 'syntax', level: x.level
+    }));
+}
+
 const packCache = {};
 
 // Paquete completo (todas las categorías) de un idioma
@@ -94,10 +138,10 @@ export function getPack(lang) {
             vocab: buildVocab(lang),
             conversation: buildConversations(lang),
             choice: buildChoice(lang, base.choice),
-            phonemes: base.phonemes || [],
-            grammar: base.grammar || [],
+            phonemes: [...(base.phonemes || []), ...buildPhonemes(lang, base.phonemeRows)],
+            grammar: [...(base.grammar || []), ...buildGrammar(lang, base.grammarRows)],
             fill: [...(base.fill || []), ...buildFillWrite(lang, base.fillWrite)],
-            order: base.order || []
+            order: [...(base.order || []), ...buildOrder(lang)]
         };
     }
     return packCache[lang];

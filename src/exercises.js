@@ -1,12 +1,12 @@
 // --- Módulo de Lógica de Ejercicios y Práctica ---
 
-import { db, sessionCount, currentTopicFilter, saveDB, incrementSessionCount, itemLang } from './state.js';
-import { getPronouns } from './content/index.js';
+import { db, sessionCount, currentTopicFilter, saveDB, incrementSessionCount, itemLang, practiceFilter } from './state.js';
+import { getPronouns, CONTENT_CATEGORIES, CONJUGATION_KEYS } from './content/index.js';
 import { charBarHTML, attachCharBar, applyKeyboardHints } from './specialChars.js';
 import { speechPercent, normalizeSpoken } from './textCompare.js';
 import { speakFrench, toggleSpeechRecognition, playSound } from './audio.js';
-import { getLevelFilter, isItemDue, matchesLevelAndSRS, isLevelUnlocked } from './levels.js';
-import { t, getStudyLang, getStudyLangName, localize, localizeTranslation } from './i18n.js';
+import { getLevelFilter, isBelowLevel, nextDueDate } from './levels.js';
+import { t, getStudyLang, getStudyLangName, getTranslationLang, localize, localizeTranslation } from './i18n.js';
 
 let sessionQueue = [];
 let retryQueue = [];
@@ -90,6 +90,22 @@ const CHOICE_TYPES = ['conversation_choice', 'choice'];
 const PRACTICE_SPEAK_PERCENT = 91;   // pronunciación en práctica: más del 90 % de coincidencia
 
 // Respuestas de cada hueco: "a, b" = varios huecos; "x|y" = respuestas válidas para un mismo hueco
+// --- Respuestas alternativas ---
+// "a|b|c" o [principal, ...alt] → lista de respuestas válidas (la primera es la principal)
+export function answerOptions(main, alt = []) {
+    return [...String(main || '').split('|'), ...(Array.isArray(alt) ? alt : [])].map(a => a.trim()).filter(Boolean);
+}
+
+// Respuesta válida que coincide con lo escrito (sin mayúsculas ni acentos), o undefined
+function matchAnswer(value, options) {
+    return options.find(a => cleanStr(value) === cleanStr(a));
+}
+
+// "a|b" → "a / b" para mostrar
+function showAlts(text) {
+    return String(text || '').split('|').map(a => a.trim()).join(' / ');
+}
+
 function fillAnswerSlots(answer) {
     return String(answer || '').split(/[,/]/).map(slot => slot.split('|').map(a => a.trim()).filter(Boolean));
 }
@@ -119,16 +135,16 @@ export function startNewSession() {
     let pool = [];
     const currentLevel = getLevelFilter();
 
-    const matchesTopicAndLevel = (item) => {
-        const matchesTopic = (currentTopicFilter === 'all' || (item.topic || 'General') === currentTopicFilter);
-        // Solo niveles desbloqueados con el examen de nivel
-        const matchesLvl = matchesLevelAndSRS(item, currentLevel) && isLevelUnlocked(item.level || 'A1', getStudyLang());
-        const matchesLang = (itemLang(item) === getStudyLang());
-        return matchesTopic && matchesLvl && matchesLang;
-    };
+    // Contenido del idioma y tema elegidos (sin mirar nivel ni estrellas)
+    const inScope = (item) => itemLang(item) === getStudyLang()
+        && (currentTopicFilter === 'all' || (item.topic || 'General') === currentTopicFilter);
+    // Nivel actual e inferiores (más los niveles superiores que cada tipo ya abrió),
+    // y solo lo que toca repasar según sus estrellas
+    const isDue = practiceFilter(getStudyLang(), currentLevel);
+    const matches = (cat) => (item) => inScope(item) && isDue(cat, item);
 
     if(db.vocab) {
-        let vocabFiltered = db.vocab.filter(item => matchesTopicAndLevel(item));
+        let vocabFiltered = db.vocab.filter(matches('vocab'));
         vocabFiltered.forEach(item => {
             pool.push({ category: 'vocab', type: 'vocab_type', isSpeaking: false, data: item, score: item.score || 0 });
         });
@@ -148,7 +164,7 @@ export function startNewSession() {
     }
     if(db.conversation) {
         db.conversation.forEach(item => {
-            if (matchesTopicAndLevel(item)) {
+            if (matches('conversation')(item)) {
                 pool.push({ category: 'conversation', type: 'conversation_choice', isSpeaking: false, data: item, score: item.score || 0 });
                 pool.push({ category: 'conversation', type: 'speaking', isSpeaking: true, targetText: item.answer, promptText: t('speakReply', { prompt: item.prompt }), item: item, score: item.score || 0 });
             }
@@ -156,21 +172,21 @@ export function startNewSession() {
     }
     if(db.choice) {
         db.choice.forEach(item => {
-            if (matchesTopicAndLevel(item)) {
+            if (matches('choice')(item)) {
                 pool.push({ category: 'choice', type: 'choice', isSpeaking: false, data: item, score: item.score || 0 });
             }
         });
     }
     if(db.grammar) {
         db.grammar.forEach(item => {
-            if (matchesTopicAndLevel(item)) {
+            if (matches('grammar')(item)) {
                 pool.push({ category: 'grammar', type: 'grammar', isSpeaking: false, data: item, score: item.score || 0 });
             }
         });
     }
     if(db.fill) {
         db.fill.forEach(item => {
-            if (matchesTopicAndLevel(item)) {
+            if (matches('fill')(item)) {
                 pool.push({ category: 'fill', type: 'fill', isSpeaking: false, data: item, score: item.score || 0 });
                 const norm = getNormalizedFillParts(withoutHints(item.sentence));
                 const answers = fillAnswerSlots(item.answer).map(slot => slot[0]);
@@ -188,7 +204,7 @@ export function startNewSession() {
     }
     if(db.order) {
         db.order.forEach(item => {
-            if (matchesTopicAndLevel(item)) {
+            if (matches('order')(item)) {
                 pool.push({ category: 'order', type: 'order', isSpeaking: false, data: item, score: item.score || 0 });
                 pool.push({ category: 'order', type: 'speaking', isSpeaking: true, targetText: item.sentence, promptText: t('speakSentence', { title: localizeTranslation(item.title) }), item: item, score: item.score || 0 });
             }
@@ -196,22 +212,25 @@ export function startNewSession() {
     }
     if(db.phonemes) {
         db.phonemes.forEach(item => {
-            if (matchesTopicAndLevel(item)) {
+            if (matches('phonemes')(item)) {
                 pool.push({ category: 'phoneme', type: 'phoneme_speak', isSpeaking: true, data: item, score: item.score || 0 });
             }
         });
     }
 
     if (pool.length === 0) {
-        renderEmptySession();
+        // Hay contenido pero nada que repasar hoy → aviso; si no hay contenido → mensaje de vacío
+        const scopeItems = CONTENT_CATEGORIES.flatMap(cat => (db[cat] || []).filter(inScope));
+        if (scopeItems.length > 0) renderCaughtUp(scopeItems);
+        else renderEmptySession();
         return;
     }
 
-    let duePool = pool.filter(i => isItemDue(i.data || i.item || (i.items ? i.items[0] : null)));
-    if (duePool.length === 0) {
-        duePool = pool;
-    }
+    const duePool = pool;
+    const poolItem = (i) => i.data || i.item || (i.items ? i.items[0] : {});
+    const isLower = (i) => isBelowLevel(poolItem(i), currentLevel);
 
+    // Variedad: uno de cada tipo (hasta 8), preferiendo el nivel actual
     let typesMap = new Map();
     duePool.forEach(item => {
         if (!typesMap.has(item.type)) {
@@ -225,13 +244,16 @@ export function startNewSession() {
 
     for (let [type, items] of typesMap.entries()) {
         if (selectedTypes.size < 8 && items.length > 0) {
-            let item = items.shift();
-            selected.push(item);
+            const candidates = items.filter(i => !isLower(i));
+            const from = candidates.length ? candidates : items;
+            selected.push(from[Math.floor(Math.random() * from.length)]);
             selectedTypes.add(type);
         }
     }
 
     let remainingPool = duePool.filter(i => !selected.includes(i));
+    // Barajar antes de ordenar: a igualdad de estrellas, el orden es aleatorio (no siempre A1 primero)
+    remainingPool.sort(() => Math.random() - 0.5);
     remainingPool.sort((a, b) => {
         const scoreA = a.score || 0;
         const scoreB = b.score || 0;
@@ -240,8 +262,13 @@ export function startNewSession() {
         return scoreA - scoreB;
     });
 
-    while (selected.length < 15 && remainingPool.length > 0) {
-        selected.push(remainingPool.shift());
+    // Reparto: unos 2/3 del nivel actual y 1/3 de repaso de niveles inferiores (si falta uno, se completa con el otro)
+    const lowerPool = remainingPool.filter(isLower);
+    const currentPool = remainingPool.filter(i => !isLower(i));
+    while (selected.length < 15 && (currentPool.length || lowerPool.length)) {
+        const lowerCount = selected.filter(isLower).length;
+        const takeLower = lowerPool.length && (!currentPool.length || lowerCount < (selected.length + 1) / 3);
+        selected.push((takeLower ? lowerPool : currentPool).shift());
     }
 
     function orderSessionQueue(queue) {
@@ -281,11 +308,44 @@ export function startNewSession() {
     loadNextQuestion();
 }
 
+// Todo al día: nada que repasar hoy. Ventana que recuerda cuándo vuelve a tocar y que se puede añadir contenido.
+function renderCaughtUp(scopeItems) {
+    renderEmptySession();
+    const next = Math.min(...scopeItems.map(nextDueDate));
+    const days = Math.max(1, Math.ceil((next - Date.now()) / (24 * 60 * 60 * 1000)));
+    document.getElementById('exercise-container').innerHTML = '';
+
+    document.getElementById('caught-up-modal')?.remove();
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'caught-up-modal';
+    modal.innerHTML = `
+        <div class="modal-card caught-up-card" role="dialog" aria-modal="true" aria-labelledby="caught-up-title">
+            <div class="onb-owl">🦉✨</div>
+            <h2 id="caught-up-title">${t('caughtUpTitle')}</h2>
+            <p class="muted">${t('caughtUpText', { days })}</p>
+            <p class="caught-up-feed">${t('caughtUpFeed')}</p>
+            <div class="summary-actions">
+                <button class="action-btn" data-go="creator">${t('btnManageContent')}</button>
+                <button class="action-btn btn-secondary" data-go="home">${t('caughtUpDictionary')}</button>
+            </div>
+        </div>`;
+    modal.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-go]');
+        if (!btn && e.target !== modal) return;
+        modal.remove();
+        window.switchView(btn ? btn.dataset.go : 'home');
+    });
+    document.body.appendChild(modal);
+    modal.querySelector('button').focus();
+}
+
 function renderEmptySession() {
     sessionQueue = [];
     retryQueue = [];
     const drawer = document.getElementById('bottom-drawer');
     if (drawer) drawer.style.display = 'none';
+    hideFeedback();
     const progBar = document.getElementById('progress-bar');
     if (progBar) progBar.style.width = '0%';
     const mobileProg = document.getElementById('progress-bar-mobile');
@@ -332,14 +392,31 @@ export function loadNextQuestion() {
     renderExercise(currentItem);
 }
 
+// --- Corrección (debajo del ejercicio; la cinta inferior solo lleva el botón) ---
+function hideFeedback() {
+    const box = document.getElementById('feedback-content');
+    if (box) box.hidden = true;
+}
+
+function showFeedback(kind, icon, title, subtext) {
+    const box = document.getElementById('feedback-content');
+    if (!box) return;
+    box.className = `feedback-content ${kind}`;
+    document.getElementById('feedback-icon').textContent = icon;
+    document.getElementById('feedback-title').textContent = title;
+    document.getElementById('feedback-subtext').textContent = subtext;
+    box.hidden = false;
+    // Que se vea sin quedar tapada por la cinta inferior (scroll-margin en CSS)
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 export function renderExercise(item) {
     const container = document.getElementById('exercise-container');
     const drawer = document.getElementById('bottom-drawer');
     if (!container || !drawer) return;
     
-    drawer.className = 'bottom-drawer';
     drawer.style.display = 'flex';
-    document.getElementById('feedback-content').style.visibility = 'hidden';
+    hideFeedback();
     const actionBtn = document.getElementById('drawer-action-btn');
     actionBtn.textContent = t('check');
     actionBtn.className = 'check-btn';
@@ -403,28 +480,22 @@ export function renderExercise(item) {
 
         container.innerHTML = `
             ${wrapTitleWithBadge(isAudioOnly ? t('matchAudioTranslation') : t('matchWordTranslation'))}
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                <div style="display: flex; flex-direction: column; gap: 10px;" id="match-left-column">
-                    ${item.items.map((it, idx) => `
-                        ${isAudioOnly ? `
-                            <div class="match-tile match-tile-audio" id="match-left-${idx}" onclick="window.selectMatchItem('left', ${idx}, '${it.id}'); window.speakFrench('${jsArg(it.fr)}')">
-                                🔊
-                            </div>
-                        ` : `
-                            <div class="match-tile match-tile-word" id="match-left-${idx}" onclick="window.selectMatchItem('left', ${idx}, '${it.id}')">
-                                <span>${escapeHTML(it.fr)}</span>
-                                <button class="speaker-btn speaker-btn-xs" onmousedown="event.preventDefault()" onclick="event.stopPropagation(); window.speakFrench('${jsArg(it.fr)}')">🔊</button>
-                            </div>
-                        `}
-                    `).join('')}
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 10px;" id="match-right-column">
-                    ${shuffledRight.map((it, idx) => `
-                        <div class="match-tile match-tile-center" id="match-right-${idx}" onclick="window.selectMatchItem('right', ${idx}, '${it.id}')">
-                            ${renderMiniIllustrationHTML(it)}<span>${escapeHTML(localizeTranslation(it.es))}</span>
-                        </div>
-                    `).join('')}
-                </div>
+            <div class="match-grid">
+                ${item.items.map((it, idx) => {
+                    const right = shuffledRight[idx];
+                    const left = isAudioOnly ? `
+                        <div class="match-tile match-tile-audio" id="match-left-${idx}" onclick="window.selectMatchItem('left', ${idx}, '${it.id}'); window.speakFrench('${jsArg(it.fr)}')">🔊</div>`
+                    : `
+                        <div class="match-tile match-tile-word" id="match-left-${idx}" onclick="window.selectMatchItem('left', ${idx}, '${it.id}')">
+                            <span lang="${itemLang(it)}">${escapeHTML(it.fr)}</span>
+                            <button class="speaker-btn speaker-btn-xs" onmousedown="event.preventDefault()" onclick="event.stopPropagation(); window.speakFrench('${jsArg(it.fr)}')">🔊</button>
+                        </div>`;
+                    // Rejilla única: cada fila es un par (izquierda, derecha) y todas las filas miden lo mismo
+                    return left + `
+                        <div class="match-tile match-tile-center" id="match-right-${idx}" onclick="window.selectMatchItem('right', ${idx}, '${right.id}')">
+                            ${renderMiniIllustrationHTML(right)}<span lang="${getTranslationLang()}">${escapeHTML(localizeTranslation(right.es))}</span>
+                        </div>`;
+                }).join('')}
             </div>
         `;
     } 
@@ -700,6 +771,8 @@ function renderSelectedWords() {
 }
 
 export function handleDrawerAction() {
+    // Sin ejercicio en pantalla (sesión vacía o todo al día) el Enter no hace nada
+    if (document.getElementById('bottom-drawer').style.display === 'none') return;
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
     }
@@ -728,7 +801,7 @@ export function showGrammarHelp() {
     panel.innerHTML = `
         <p class="grammar-help-title">💡 ${escapeHTML(currentItem.data.verb)} · ${escapeHTML(currentItem.data.tense)}</p>
         <div class="grammar-help-grid">
-            ${Object.keys(c).map(k => `<span class="grammar-help-pronoun">${escapeHTML(pronouns[k])}</span><span class="grammar-help-form">${escapeHTML(c[k])}</span>`).join('')}
+            ${Object.keys(c).map(k => `<span class="grammar-help-pronoun">${escapeHTML(pronouns[k])}</span><span class="grammar-help-form">${escapeHTML(showAlts(c[k]))}</span>`).join('')}
         </div>
         <p class="grammar-help-warning">${t('grammarHelpWarning')}</p>`;
 }
@@ -742,12 +815,7 @@ function deferGrammarAfterHelp() {
     queue.splice(Math.min(3, queue.length), 0, currentItem);
 
     const c = currentItem.data.conjugations;
-    const drawer = document.getElementById('bottom-drawer');
-    document.getElementById('feedback-content').style.visibility = 'visible';
-    drawer.className = 'bottom-drawer neutral';
-    document.getElementById('feedback-icon').textContent = '💡';
-    document.getElementById('feedback-title').textContent = t('grammarHelpNotScored');
-    document.getElementById('feedback-subtext').textContent = Object.values(c).join(', ');
+    showFeedback('neutral', '💡', t('grammarHelpNotScored'), Object.values(c).map(showAlts).join(', '));
     const actionBtn = document.getElementById('drawer-action-btn');
     actionBtn.textContent = t('continue');
     actionBtn.className = 'check-btn btn-neutral';
@@ -768,10 +836,14 @@ function checkAnswer() {
     let accentNote = '';
     if (currentItem.type === 'vocab_type') {
         const val = document.getElementById('user-input').value.trim();
-        isCorrect = (cleanStr(val) === cleanStr(currentItem.data.fr));
-        if (isCorrect && strictNorm(val) !== strictNorm(currentItem.data.fr)) accentNote = currentItem.data.fr;
-        correctSolutionText = `${currentItem.data.fr} = ${localizeTranslation(currentItem.data.es)}`;
-        textToSpeak = currentItem.data.fr;
+        const options = answerOptions(currentItem.data.fr, currentItem.data.alt);
+        const match = matchAnswer(val, options);
+        isCorrect = !!match;
+        if (isCorrect && strictNorm(val) !== strictNorm(match)) accentNote = match;
+        const others = options.filter(a => a !== (match || currentItem.data.fr));
+        correctSolutionText = `${match || currentItem.data.fr} = ${localizeTranslation(currentItem.data.es)}`
+            + (others.length ? ` · ${t('alsoCorrect', { list: others.join(', ') })}` : '');
+        textToSpeak = match || currentItem.data.fr;
     } else if (currentItem.type === 'phoneme_speak') {
         const val = document.getElementById('user-speech-input').value.trim();
         const cleanInput = cleanStr(val);
@@ -811,8 +883,9 @@ function checkAnswer() {
         Object.keys(c).forEach(k => {
             if (currentItem.prefilled[k]) return;
 
-            if (cleanStr(userVals[k]) === cleanStr(c[k])) {
-                currentItem.prefilled[k] = c[k];
+            const match = matchAnswer(userVals[k], answerOptions(c[k]));
+            if (match) {
+                currentItem.prefilled[k] = match;
                 if (inputs[k]) {
                     inputs[k].classList.remove('is-wrong');
                     inputs[k].classList.add('is-correct');
@@ -820,7 +893,7 @@ function checkAnswer() {
                 }
             } else {
                 allGrammarCorrect = false;
-                incorrectConjugations.push({ pronoun: pronouns[k].split(' / ')[0].replace(/'$/, ''), correct: c[k] });
+                incorrectConjugations.push({ pronoun: pronouns[k].split(' / ')[0].replace(/'$/, ''), correct: answerOptions(c[k])[0] });
                 if (inputs[k]) inputs[k].classList.add('is-wrong');
             }
         });
@@ -829,7 +902,7 @@ function checkAnswer() {
         if (isCorrect) {
             currentItem.prefilled = {};
         }
-        correctSolutionText = `${c.je}, ${c.tu}, ${c.il}, ${c.nous}, ${c.vous}, ${c.ils}`;
+        correctSolutionText = CONJUGATION_KEYS.map(k => showAlts(c[k])).join(', ');
         textToSpeak = !isCorrect && incorrectConjugations.length > 0 
             ? incorrectConjugations.map(ic => `${ic.pronoun} ${ic.correct}`).join('. ') 
             : currentItem.data.verb;
@@ -865,9 +938,13 @@ function checkAnswer() {
         textToSpeak = (spokenSentence + norm.punct).trim();
     } else if (currentItem.type === 'order') {
         const userSentence = selectedWords.map(sw => sw.word).join(' ').trim();
-        isCorrect = (cleanStr(userSentence) === cleanStr(currentItem.data.sentence));
-        correctSolutionText = currentItem.data.sentence;
-        textToSpeak = currentItem.data.sentence;
+        const options = [currentItem.data.sentence, ...(currentItem.data.alt || [])];
+        const match = matchAnswer(userSentence, options);
+        isCorrect = !!match;
+        const others = options.filter(a => a !== (match || currentItem.data.sentence));
+        correctSolutionText = (match || currentItem.data.sentence)
+            + (others.length ? ` · ${t('alsoCorrect', { list: others.join(' / ') })}` : '');
+        textToSpeak = match || currentItem.data.sentence;
     } else if (currentItem.type === 'choice') {
         if (selectedChoice === null) return;
         isCorrect = currentItem.options[selectedChoice] === currentItem.data.answer;
@@ -948,28 +1025,15 @@ function checkAnswer() {
     }
     playSound(isCorrect ? 'correct' : 'incorrect');
 
-    const drawer = document.getElementById('bottom-drawer');
-    const feedbackContent = document.getElementById('feedback-content');
-    const icon = document.getElementById('feedback-icon');
-    const title = document.getElementById('feedback-title');
-    const subtext = document.getElementById('feedback-subtext');
     const actionBtn = document.getElementById('drawer-action-btn');
 
-    feedbackContent.style.visibility = 'visible';
-
     if (isCorrect) {
-        drawer.className = 'bottom-drawer correct';
-        icon.textContent = '✓';
-        title.textContent = t('excellent');
-        subtext.textContent = t('solutionLabel', { solution: correctSolutionText })
-            + (accentNote ? ` · ⚠️ ${t('accentWarning', { word: accentNote })}` : '');
+        showFeedback('correct', '✓', t('excellent'), t('solutionLabel', { solution: correctSolutionText })
+            + (accentNote ? ` · ⚠️ ${t('accentWarning', { word: accentNote })}` : ''));
         actionBtn.textContent = t('continue');
         actionBtn.className = 'check-btn';
     } else {
-        drawer.className = 'bottom-drawer incorrect';
-        icon.textContent = '✕';
-        title.textContent = t('incorrect');
-        subtext.textContent = correctSolutionText;
+        showFeedback('incorrect', '✕', t('incorrect'), correctSolutionText);
         actionBtn.textContent = t('understood');
         actionBtn.className = 'check-btn btn-incorrect';
     }
@@ -984,6 +1048,7 @@ function finishSession() {
     saveDB();
 
     document.getElementById('bottom-drawer').style.display = 'none';
+    hideFeedback();
     const container = document.getElementById('exercise-container');
     const progBar = document.getElementById('progress-bar');
     if (progBar) progBar.style.width = '100%';

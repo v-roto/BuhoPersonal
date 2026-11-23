@@ -146,5 +146,73 @@ export const CONVERSATION_SCENES = [
             it: { prompt: 'Quindi sei del tutto contrario alla proposta?', answer: "Non esattamente; ne condivido la sostanza, ma non sono d'accordo sul modo di attuarla.", wrong: ['Sì, la proposta è arrivata per posta.', 'Sono contrario alla pioggia.'] },
             de: { prompt: 'Du bist also völlig gegen den Vorschlag?', answer: 'Nicht ganz; inhaltlich stimme ich zu, aber mit der Umsetzung bin ich nicht einverstanden.', wrong: ['Ja, der Vorschlag kam mit der Post.', 'Ich bin gegen den Regen.'] }
         }
+    },
+
+    // --- Ampliación: una escena más por nivel ---
+    {
+        key: 'origin', img: '🌍', level: 'A1',
+        context: { es: 'Un compañero de clase te pregunta.', en: 'A classmate asks you.', fr: 'Un camarade de classe te demande.' },
+        lines: {
+            es: { prompt: '¿De dónde eres?', answer: 'Soy de México.', wrong: ['Tengo dos hermanos.', 'Es lunes.'] },
+            en: { prompt: 'Where are you from?', answer: "I'm from Mexico.", wrong: ['I have two brothers.', "It's Monday."] },
+            fr: { prompt: "Tu viens d'où ?", answer: 'Je viens du Mexique.', wrong: ["J'ai deux frères.", "C'est lundi."] },
+            it: { prompt: 'Di dove sei?', answer: 'Vengo dal Messico.', wrong: ['Ho due fratelli.', 'È lunedì.'] },
+            de: { prompt: 'Woher kommst du?', answer: 'Ich komme aus Mexiko.', wrong: ['Ich habe zwei Brüder.', 'Es ist Montag.'] }
+        }
+    },
+    {
+        key: 'shop', img: '🛍️', level: 'A2',
+        context: { es: 'Estás de compras en una tienda de ropa.', en: "You're shopping in a clothes shop.", fr: 'Tu fais du shopping dans un magasin de vêtements.' },
+        lines: {
+            es: { prompt: '¿Cuánto cuesta esta camiseta?', answer: 'Cuesta quince euros.', wrong: ['Mi hermana es médica.', 'Ayer fui al parque.'] },
+            en: { prompt: 'How much is this T-shirt?', answer: 'It costs fifteen euros.', wrong: ['My sister is a doctor.', 'Yesterday I went to the park.'] },
+            fr: { prompt: 'Combien coûte ce tee-shirt ?', answer: 'Il coûte quinze euros.', wrong: ['Ma sœur est médecin.', 'Hier, je suis allé au parc.'] },
+            it: { prompt: 'Quanto costa questa maglietta?', answer: 'Costa quindici euro.', wrong: ['Mia sorella è medico.', 'Ieri sono andato al parco.'] },
+            de: { prompt: 'Wie viel kostet dieses T-Shirt?', answer: 'Es kostet fünfzehn Euro.', wrong: ['Meine Schwester ist Ärztin.', 'Gestern bin ich in den Park gegangen.'] }
+        }
+    },
+    {
+        key: 'hotel', img: '🏨', level: 'B1',
+        context: { es: 'Llamas a la recepción de tu hotel.', en: "You call your hotel's reception.", fr: "Tu appelles la réception de ton hôtel." },
+        lines: {
+            es: { prompt: '¿En qué puedo ayudarle?', answer: 'La calefacción de mi habitación no funciona. ¿Podrían revisarla?', wrong: ['Me encanta el chocolate.', 'Mañana es mi cumpleaños.'] },
+            en: { prompt: 'How can I help you?', answer: "The heating in my room isn't working. Could you check it?", wrong: ['I love chocolate.', 'Tomorrow is my birthday.'] },
+            fr: { prompt: 'Que puis-je faire pour vous ?', answer: 'Le chauffage de ma chambre ne marche pas. Pourriez-vous vérifier ?', wrong: ["J'adore le chocolat.", "Demain, c'est mon anniversaire."] },
+            it: { prompt: 'Come posso aiutarla?', answer: 'Il riscaldamento della mia camera non funziona. Potreste controllarlo?', wrong: ['Adoro il cioccolato.', 'Domani è il mio compleanno.'] },
+            de: { prompt: 'Wie kann ich Ihnen helfen?', answer: 'Die Heizung in meinem Zimmer funktioniert nicht. Könnten Sie sie überprüfen?', wrong: ['Ich liebe Schokolade.', 'Morgen habe ich Geburtstag.'] }
+        }
+    },
+    {
+        key: 'apology', img: '⏰', level: 'B2',
+        context: { es: 'Un compañero se disculpa contigo.', en: 'A colleague apologises to you.', fr: "Un collègue s'excuse auprès de toi." },
+        lines: {
+            es: { prompt: 'Siento mucho haber llegado tarde a la reunión.', answer: 'No te preocupes, aunque te agradecería que avisaras la próxima vez.', wrong: ['Gracias, me encanta tu coche.', 'Sí, mañana hará sol.'] },
+            en: { prompt: "I'm really sorry I was late for the meeting.", answer: "Don't worry, although I'd appreciate it if you let me know next time.", wrong: ['Thanks, I love your car.', "Yes, it'll be sunny tomorrow."] },
+            fr: { prompt: "Je suis vraiment désolé d'être arrivé en retard à la réunion.", answer: "Ne t'inquiète pas, mais j'apprécierais que tu préviennes la prochaine fois.", wrong: ["Merci, j'adore ta voiture.", 'Oui, il fera beau demain.'] },
+            it: { prompt: 'Mi dispiace molto di essere arrivato tardi alla riunione.', answer: 'Non preoccuparti, anche se apprezzerei che mi avvisassi la prossima volta.', wrong: ['Grazie, adoro la tua macchina.', 'Sì, domani ci sarà il sole.'] },
+            de: { prompt: 'Es tut mir wirklich leid, dass ich zu spät zur Besprechung gekommen bin.', answer: 'Kein Problem, aber ich wäre dir dankbar, wenn du nächstes Mal Bescheid sagst.', wrong: ['Danke, ich liebe dein Auto.', 'Ja, morgen scheint die Sonne.'] }
+        }
+    },
+    {
+        key: 'committee', img: '🎤', level: 'C1',
+        context: { es: 'Defiendes un proyecto ante un comité.', en: "You're defending a project before a committee.", fr: 'Tu défends un projet devant un comité.' },
+        lines: {
+            es: { prompt: '¿No cree que su propuesta resulta demasiado costosa?', answer: 'Es cierto que requiere una inversión inicial, pero a medio plazo se amortiza con creces.', wrong: ['Sí, me gusta mucho el café.', 'La propuesta está en la mesa de la cocina.'] },
+            en: { prompt: "Don't you think your proposal is too expensive?", answer: 'It does require an initial investment, but in the medium term it more than pays for itself.', wrong: ['Yes, I really like coffee.', 'The proposal is on the kitchen table.'] },
+            fr: { prompt: 'Ne pensez-vous pas que votre proposition est trop coûteuse ?', answer: 'Elle exige certes un investissement initial, mais à moyen terme elle est largement rentabilisée.', wrong: ["Oui, j'aime beaucoup le café.", 'La proposition est sur la table de la cuisine.'] },
+            it: { prompt: 'Non pensa che la sua proposta sia troppo costosa?', answer: 'È vero che richiede un investimento iniziale, ma a medio termine si ripaga ampiamente.', wrong: ['Sì, mi piace molto il caffè.', 'La proposta è sul tavolo della cucina.'] },
+            de: { prompt: 'Halten Sie Ihren Vorschlag nicht für zu teuer?', answer: 'Er erfordert zwar eine Anfangsinvestition, macht sich aber mittelfristig mehr als bezahlt.', wrong: ['Ja, ich mag Kaffee sehr.', 'Der Vorschlag liegt auf dem Küchentisch.'] }
+        }
+    },
+    {
+        key: 'idiom', img: '🧵', level: 'C2',
+        context: { es: 'Comentas con un colega cómo terminó un proyecto complicado.', en: "You're discussing with a colleague how a tricky project ended.", fr: "Tu discutes avec un collègue de la fin d'un projet compliqué." },
+        lines: {
+            es: { prompt: 'Parece que al final todo salió a pedir de boca, ¿no?', answer: 'Sí, aunque hubo momentos en que pendía de un hilo.', wrong: ['Sí, me duele un poco la boca.', 'No, el hilo es demasiado corto.'] },
+            en: { prompt: 'It looks like everything went off without a hitch in the end, didn’t it?', answer: 'Yes, although at times it was hanging by a thread.', wrong: ['Yes, I tied a knot in it.', 'No, the thread is too short.'] },
+            fr: { prompt: "On dirait que tout s'est finalement passé comme sur des roulettes, non ?", answer: 'Oui, même si à certains moments ça ne tenait qu’à un fil.', wrong: ["Oui, j'ai acheté des roulettes.", 'Non, le fil est trop court.'] },
+            it: { prompt: "Sembra che alla fine sia andato tutto liscio come l'olio, no?", answer: 'Sì, anche se in certi momenti era appeso a un filo.', wrong: ["Sì, l'olio è in cucina.", 'No, il filo è troppo corto.'] },
+            de: { prompt: 'Am Ende ist ja doch alles wie am Schnürchen gelaufen, oder?', answer: 'Ja, obwohl es zeitweise an einem seidenen Faden hing.', wrong: ['Ja, ich habe ein neues Schnürchen gekauft.', 'Nein, der Faden ist zu kurz.'] }
+        }
     }
 ];

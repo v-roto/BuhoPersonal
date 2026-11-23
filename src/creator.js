@@ -6,8 +6,9 @@ import { getLevelFilter } from './levels.js';
 import { getPronouns, getExamples, CONJUGATION_KEYS, CONTENT_CATEGORIES } from './content/index.js';
 import {
     t, getStudyLang, getStudyLangName, getLangName, getTranslationLang,
-    localize, localizeTranslation, topicLabel, topicFromInput, LANG_FLAGS
+    localize, localizeTranslation, topicLabel, topicFromInput
 } from './i18n.js';
+import { flagSVG } from './flags.js';
 
 let editingItemId = null;
 let editingItemType = null;
@@ -87,7 +88,7 @@ export function updateCreatorExamples() {
     const label = (id, text) => { if ($(id)) $(id).textContent = text; };
 
     const banner = $('creator-lang-banner');
-    if (banner) banner.textContent = `${LANG_FLAGS[lang] || '🌐'} ${t('editingContentFor', { lang: studyName })}`;
+    if (banner) banner.innerHTML = `${flagSVG(lang)} ${escapeHTML(t('editingContentFor', { lang: studyName }))}`;
 
     label('label-vocab-word', t('wordInLang', { lang: studyName }));
     label('label-vocab-trans', t('translationInLang', { lang: trName }));

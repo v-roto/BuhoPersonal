@@ -3,7 +3,7 @@
 import { db, sessionCount, currentTopicFilter, saveDB, incrementSessionCount, itemLang } from './state.js';
 import { getPronouns } from './content/index.js';
 import { speakFrench, toggleSpeechRecognition, playSound } from './audio.js';
-import { getLevelFilter, isItemDue, matchesLevelAndSRS } from './levels.js';
+import { getLevelFilter, isItemDue, matchesLevelAndSRS, isLevelUnlocked } from './levels.js';
 import { t, getStudyLang, getStudyLangName, localize, localizeTranslation } from './i18n.js';
 
 let sessionQueue = [];
@@ -16,6 +16,7 @@ let questionStartTime = 0;
 
 let sessionStats = { total: 0, answered: 0, firstTryAnswered: 0, firstTryCorrect: 0 };
 let selectedChoice = null;
+let orderWordBank = [];
 
 // Escapa texto para usarlo como argumento JS dentro de un atributo onclick="..."
 function jsArg(text) {
@@ -63,20 +64,24 @@ export function selectMatchItem(side, index, itemId) {
 
 window.selectMatchItem = selectMatchItem;
 
+function hasIllustration(item) {
+    return !!(item && (item.imgDataUrl || item.svgCode || item.img));
+}
+
 function renderIllustrationHTML(item) {
     if (item.imgDataUrl) {
-        return `<div class="illustration-box"><img src="${item.imgDataUrl}" alt="Illustration"></div>`;
+        return `<div class="illustration-box"><img src="${escapeHTML(item.imgDataUrl)}" alt=""></div>`;
     } else if (item.svgCode) {
         return `<div class="illustration-box">${item.svgCode}</div>`;
     } else {
-        return `<div class="vocab-image-placeholder">${item.img || '📘'}</div>`;
+        return `<div class="vocab-image-placeholder">${escapeHTML(item.img || '📘')}</div>`;
     }
 }
 
 function renderMiniIllustrationHTML(item) {
-    if (item.imgDataUrl) return `<img src="${item.imgDataUrl}" style="height: 30px; vertical-align: middle; margin-left: 5px; border-radius: 4px;">`;
-    if (item.svgCode) return `<span style="display:inline-block; width:30px; height:30px; vertical-align:middle; margin-left:5px;">${item.svgCode}</span>`;
-    return `<span style="margin-left:4px; font-size:1.2rem;">${item.img || ''}</span>`;
+    if (item.imgDataUrl) return `<img class="mini-illustration" src="${escapeHTML(item.imgDataUrl)}" alt="">`;
+    if (item.svgCode) return `<span class="mini-illustration">${item.svgCode}</span>`;
+    return item.img ? `<span class="mini-emoji">${escapeHTML(item.img)}</span>` : '';
 }
 
 function getNormalizedFillParts(sentence) {
@@ -96,7 +101,8 @@ export function startNewSession() {
 
     const matchesTopicAndLevel = (item) => {
         const matchesTopic = (currentTopicFilter === 'all' || (item.topic || 'General') === currentTopicFilter);
-        const matchesLvl = matchesLevelAndSRS(item, currentLevel);
+        // Solo niveles desbloqueados con el examen de nivel
+        const matchesLvl = matchesLevelAndSRS(item, currentLevel) && isLevelUnlocked(item.level || 'A1', getStudyLang());
         const matchesLang = (itemLang(item) === getStudyLang());
         return matchesTopic && matchesLvl && matchesLang;
     };
@@ -349,9 +355,11 @@ export function renderExercise(item) {
         container.innerHTML = `
             ${wrapTitleWithBadge(t('writeWordInStudyLang', { lang: getStudyLangName() }))}
             <div class="vocab-card">
-                ${renderIllustrationHTML(item.data)}
-                <p class="vocab-translation-hint">${escapeHTML(localizeTranslation(item.data.es))}</p>
-                <button class="speaker-btn hint-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.data.fr.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">${t('listenAudioHint')}</button>
+                <div class="vocab-prompt-row">
+                    ${hasIllustration(item.data) ? renderIllustrationHTML(item.data) : ''}
+                    <p class="vocab-translation-hint">${escapeHTML(localizeTranslation(item.data.es))}</p>
+                </div>
+                <button class="speaker-btn hint-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${jsArg(item.data.fr)}')">${t('listenAudioHint')}</button>
             </div>
             <input type="text" id="user-input" class="duo-input" placeholder="${t('typeInFrench')}" autocomplete="off">
         `;
@@ -371,13 +379,13 @@ export function renderExercise(item) {
                 <div style="display: flex; flex-direction: column; gap: 10px;" id="match-left-column">
                     ${item.items.map((it, idx) => `
                         ${isAudioOnly ? `
-                            <div class="match-tile match-tile-audio" id="match-left-${idx}" onclick="window.selectMatchItem('left', ${idx}, '${it.id}'); window.speakFrench('${it.fr.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">
+                            <div class="match-tile match-tile-audio" id="match-left-${idx}" onclick="window.selectMatchItem('left', ${idx}, '${it.id}'); window.speakFrench('${jsArg(it.fr)}')">
                                 🔊
                             </div>
                         ` : `
                             <div class="match-tile match-tile-word" id="match-left-${idx}" onclick="window.selectMatchItem('left', ${idx}, '${it.id}')">
-                                <span>${it.fr}</span>
-                                <button class="speaker-btn speaker-btn-xs" onmousedown="event.preventDefault()" onclick="event.stopPropagation(); window.speakFrench('${it.fr.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">🔊</button>
+                                <span>${escapeHTML(it.fr)}</span>
+                                <button class="speaker-btn speaker-btn-xs" onmousedown="event.preventDefault()" onclick="event.stopPropagation(); window.speakFrench('${jsArg(it.fr)}')">🔊</button>
                             </div>
                         `}
                     `).join('')}
@@ -385,7 +393,7 @@ export function renderExercise(item) {
                 <div style="display: flex; flex-direction: column; gap: 10px;" id="match-right-column">
                     ${shuffledRight.map((it, idx) => `
                         <div class="match-tile match-tile-center" id="match-right-${idx}" onclick="window.selectMatchItem('right', ${idx}, '${it.id}')">
-                            ${localizeTranslation(it.es)}
+                            ${renderMiniIllustrationHTML(it)}<span>${escapeHTML(localizeTranslation(it.es))}</span>
                         </div>
                     `).join('')}
                 </div>
@@ -398,24 +406,24 @@ export function renderExercise(item) {
             <div class="speaking-card">
                 <div class="phoneme-combined-card">
                     <div class="phoneme-header-row">
-                        <span class="phoneme-symbol-text">${item.data.symbol}</span>
-                        <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.data.symbol.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">🔊</button>
+                        <span class="phoneme-symbol-text">${escapeHTML(item.data.symbol)}</span>
+                        <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${jsArg(item.data.symbol)}')">🔊</button>
                     </div>
                     <div class="phoneme-example-row">
                         <div>
                             <span class="phoneme-example-label">${t('exampleLabel')} </span>
-                            <strong class="phoneme-example-word">${item.data.word}</strong>
-                            <span class="phoneme-example-trans"> (${localizeTranslation(item.data.trans)})</span>
+                            <strong class="phoneme-example-word">${escapeHTML(item.data.word)}</strong>
+                            <span class="phoneme-example-trans"> (${escapeHTML(localizeTranslation(item.data.trans))})</span>
                             ${renderMiniIllustrationHTML(item.data)}
                         </div>
-                        <button class="speaker-btn speaker-btn-sm" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.data.word.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">🔊</button>
+                        <button class="speaker-btn speaker-btn-sm" onmousedown="event.preventDefault()" onclick="window.speakFrench('${jsArg(item.data.word)}')">🔊</button>
                     </div>
                 </div>
 
                 <div style="margin-top: 5px;">
                     <button class="mic-btn" id="mic-trigger-btn" onclick="window.toggleSpeechRecognition()">🎤</button>
                 </div>
-                <p id="speech-status" class="speech-status">${t('speakSymbolOrWord', { symbol: item.data.symbol, word: item.data.word })}</p>
+                <p id="speech-status" class="speech-status">${escapeHTML(t('speakSymbolOrWord', { symbol: item.data.symbol, word: item.data.word }))}</p>
 
                 <div class="speech-edit-container">
                     <label class="speech-edit-label">${t('whatSystemHeard')}</label>
@@ -434,9 +442,9 @@ export function renderExercise(item) {
             ${wrapTitleWithBadge(t('pronunciationExerciseTitle'))}
             <div class="speaking-card">
                 ${item.item ? renderIllustrationHTML(item.item) : '<div style="font-size: 3.5rem;">🗣️</div>'}
-                <h3 style="font-size: 1.2rem;">${item.promptText}</h3>
-                <p class="speaking-target">"${item.targetText}"</p>
-                <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.targetText.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">🔊</button>
+                <h3 style="font-size: 1.2rem;">${escapeHTML(item.promptText)}</h3>
+                <p class="speaking-target">"${escapeHTML(item.targetText)}"</p>
+                <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${jsArg(item.targetText)}')">🔊</button>
                 
                 <div style="margin-top: 10px;">
                     <button class="mic-btn" id="mic-trigger-btn" onclick="window.toggleSpeechRecognition()">🎤</button>
@@ -494,15 +502,19 @@ export function renderExercise(item) {
         container.innerHTML = `
             ${wrapTitleWithBadge(t('completeConjugationTable'))}
             <div class="instruction-box">
-                <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.data.verb.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">🔊</button>
+                <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${jsArg(item.data.verb)}')">🔊</button>
                 <div>
-                    <p style="color: var(--duo-text-muted); margin:0;">${t('verbLabel')}: <strong>${item.data.verb}</strong> | ${t('tenseLabel')}: <strong>${item.data.tense}</strong></p>
+                    <p style="color: var(--duo-text-muted); margin:0;">${t('verbLabel')}: <strong>${escapeHTML(item.data.verb)}</strong> | ${t('tenseLabel')}: <strong>${escapeHTML(item.data.tense)}</strong></p>
                 </div>
+                ${item.helpConsumed
+                    ? `<span class="grammar-help-note">🎯 ${t('grammarHelpCountsNow')}</span>`
+                    : `<button class="grammar-help-btn" id="grammar-help-btn" onclick="window.showGrammarHelp()">💡 ${t('grammarHelpBtn')}</button>`}
             </div>
+            <div class="grammar-help-panel" id="grammar-help-panel" hidden></div>
             <div class="grammar-table-container">
                 <div class="grammar-header">
                     <span style="font-weight: 800; color: #1899d6;">${t('subjectPronouns')}</span>
-                    <span class="grammar-badge">${item.data.verb}</span>
+                    <span class="grammar-badge">${escapeHTML(item.data.verb)}</span>
                 </div>
                 <table class="conjugation-table">
                     <tr><td class="pronoun-cell">${pronouns.je}</td><td><input type="text" id="gram-je" class="duo-input" value="${prefilled.je || ''}" ${prefilled.je ? 'disabled' : ''} placeholder="..." autocomplete="off"></td></tr>
@@ -519,18 +531,18 @@ export function renderExercise(item) {
         const norm = getNormalizedFillParts(item.data.sentence);
         let sentenceHTML = "";
         norm.parts.forEach((p, idx) => {
-            sentenceHTML += `<span>${p}</span>`;
+            sentenceHTML += `<span>${escapeHTML(p)}</span>`;
             if (idx < norm.parts.length - 1) {
                 sentenceHTML += `<input type="text" class="inline-blank-input fill-blank-input" data-idx="${idx}" autocomplete="off">`;
             }
         });
         if (norm.punct) {
-            sentenceHTML += `<span>${norm.punct}</span>`;
+            sentenceHTML += `<span>${escapeHTML(norm.punct)}</span>`;
         }
 
         container.innerHTML = `
-            ${wrapTitleWithBadge(localize(item.data.title))}
-            ${renderIllustrationHTML(item.data)}
+            ${wrapTitleWithBadge(escapeHTML(localize(item.data.title)))}
+            ${hasIllustration(item.data) ? renderIllustrationHTML(item.data) : ''}
             <div class="fill-blank-sentence">
                 ${sentenceHTML}
             </div>
@@ -538,18 +550,19 @@ export function renderExercise(item) {
     }
     else if (item.type === 'order') {
         const targetWords = item.data.sentence.split(' ');
-        const allWords = [...targetWords, ...item.data.extras].sort(() => Math.random() - 0.5);
+        const allWords = [...targetWords, ...(item.data.extras || [])].sort(() => Math.random() - 0.5);
+        orderWordBank = allWords;
 
         container.innerHTML = `
-            ${wrapTitleWithBadge(localizeTranslation(item.data.title))}
+            ${wrapTitleWithBadge(escapeHTML(localizeTranslation(item.data.title)))}
             <div class="instruction-box">
-                <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${item.data.sentence.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')">🔊</button>
+                <button class="speaker-btn" onmousedown="event.preventDefault()" onclick="window.speakFrench('${jsArg(item.data.sentence)}')">🔊</button>
             </div>
-            ${item.data.img || item.data.imgDataUrl || item.data.svgCode ? renderIllustrationHTML(item.data) : ''}
+            ${hasIllustration(item.data) ? renderIllustrationHTML(item.data) : ''}
             <div class="sentence-target-area" id="target-word-area"></div>
             <div class="word-bank">
                 ${allWords.map((w, idx) => `
-                    <button class="word-tile" id="tile-${idx}" onclick="window.toggleWord('${w.replace(/'/g, "\\'")}', ${idx})">${w}</button>
+                    <button class="word-tile" id="tile-${idx}" onclick="window.toggleWord(${idx})">${escapeHTML(w)}</button>
                 `).join('')}
             </div>
         `;
@@ -600,9 +613,10 @@ export function skipAllSpeakingExercises() {
     loadNextQuestion();
 }
 
-export function toggleWord(word, index) {
+export function toggleWord(index) {
     const tile = document.getElementById(`tile-${index}`);
     if (!tile || tile.classList.contains('disabled')) return;
+    const word = orderWordBank[index];
 
     selectedWords.push({ word, index });
     tile.classList.add('disabled');
@@ -621,7 +635,7 @@ function renderSelectedWords() {
     const area = document.getElementById('target-word-area');
     if (!area) return;
     area.innerHTML = selectedWords.map((item, idx) => `
-        <button class="word-tile" onclick="window.removeSelectedWord(${idx})">${item.word}</button>
+        <button class="word-tile" onclick="window.removeSelectedWord(${idx})">${escapeHTML(item.word)}</button>
     `).join('');
 }
 
@@ -640,7 +654,52 @@ function cleanStr(str) {
     return (str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?'"]/g, "").trim();
 }
 
+// Muestra la conjugación completa. Si se usa, esta vez no se evalúa y el ejercicio vuelve más adelante.
+export function showGrammarHelp() {
+    if (!currentItem || currentItem.type !== 'grammar' || currentItem.helpConsumed || isChecked) return;
+    currentItem.helpUsed = true;
+    const pronouns = getPronouns(itemLang(currentItem.data));
+    const c = currentItem.data.conjugations;
+    const panel = document.getElementById('grammar-help-panel');
+    const btn = document.getElementById('grammar-help-btn');
+    if (btn) btn.hidden = true;
+    if (!panel) return;
+    panel.hidden = false;
+    panel.innerHTML = `
+        <p class="grammar-help-title">💡 ${escapeHTML(currentItem.data.verb)} · ${escapeHTML(currentItem.data.tense)}</p>
+        <div class="grammar-help-grid">
+            ${Object.keys(c).map(k => `<span class="grammar-help-pronoun">${escapeHTML(pronouns[k])}</span><span class="grammar-help-form">${escapeHTML(c[k])}</span>`).join('')}
+        </div>
+        <p class="grammar-help-warning">${t('grammarHelpWarning')}</p>`;
+}
+
+// Tras usar la ayuda: sin puntuar y de vuelta a la cola para evaluarlo la próxima vez
+function deferGrammarAfterHelp() {
+    currentItem.helpUsed = false;
+    currentItem.helpConsumed = true;
+    currentItem.prefilled = {};
+    const queue = isRetryMode ? retryQueue : sessionQueue;
+    queue.splice(Math.min(3, queue.length), 0, currentItem);
+
+    const c = currentItem.data.conjugations;
+    const drawer = document.getElementById('bottom-drawer');
+    document.getElementById('feedback-content').style.visibility = 'visible';
+    drawer.className = 'bottom-drawer neutral';
+    document.getElementById('feedback-icon').textContent = '💡';
+    document.getElementById('feedback-title').textContent = t('grammarHelpNotScored');
+    document.getElementById('feedback-subtext').textContent = Object.values(c).join(', ');
+    const actionBtn = document.getElementById('drawer-action-btn');
+    actionBtn.textContent = t('continue');
+    actionBtn.className = 'check-btn btn-neutral';
+    isChecked = true;
+    updateProgressBar();
+}
+
 function checkAnswer() {
+    if (currentItem.type === 'grammar' && currentItem.helpUsed && !currentItem.helpConsumed) {
+        deferGrammarAfterHelp();
+        return;
+    }
     let isCorrect = false;
     let correctSolutionText = '';
     let textToSpeak = '';
@@ -892,3 +951,4 @@ window.handleDrawerAction = handleDrawerAction;
 window.startNewSession = startNewSession;
 window.selectChoice = selectChoice;
 window.toggleChatTranslation = toggleChatTranslation;
+window.showGrammarHelp = showGrammarHelp;

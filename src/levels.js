@@ -44,3 +44,43 @@ export function matchesLevelAndSRS(item, selectedLevel) {
     const score = item.score || 0;
     return itemIdx < selectedIdx && score > 0 && score < 4 && isItemDue(item);
 }
+
+// --- Niveles desbloqueados por idioma (se obtienen con el examen de nivel) ---
+const UNLOCK_KEY = 'buho_unlocked_levels';
+
+function readUnlocked() {
+    try {
+        const stored = JSON.parse(localStorage.getItem(UNLOCK_KEY));
+        if (stored && typeof stored === 'object') return stored;
+    } catch (e) { /* valor corrupto: se reinicia */ }
+    return null;
+}
+
+export function levelIndex(level) {
+    const idx = CEFR_LEVELS.indexOf(level || 'A1');
+    return idx < 0 ? 0 : idx;
+}
+
+// Usuarios anteriores al examen: conservan el nivel que ya tenían elegido en su idioma actual
+export function migrateUnlockedLevels(currentLang) {
+    if (readUnlocked()) return;
+    const filter = getLevelFilter();
+    const initial = CEFR_LEVELS.includes(filter) ? filter : 'A1';
+    localStorage.setItem(UNLOCK_KEY, JSON.stringify({ [currentLang]: initial }));
+}
+
+export function getUnlockedLevel(lang) {
+    const map = readUnlocked() || {};
+    return CEFR_LEVELS.includes(map[lang]) ? map[lang] : 'A1';
+}
+
+// Nunca baja un nivel ya desbloqueado
+export function setUnlockedLevel(lang, level) {
+    const map = readUnlocked() || {};
+    if (levelIndex(level) >= levelIndex(map[lang])) map[lang] = level;
+    localStorage.setItem(UNLOCK_KEY, JSON.stringify(map));
+}
+
+export function isLevelUnlocked(level, lang) {
+    return level === 'all' || levelIndex(level) <= levelIndex(getUnlockedLevel(lang));
+}

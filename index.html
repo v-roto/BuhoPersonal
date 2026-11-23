@@ -29,9 +29,19 @@
                 <div class="lang-picker" id="onb-lang-picker"></div>
             </div>
             <div id="onb-step-2" hidden>
+                <div class="onb-owl">📝</div>
                 <h2 data-i18n="onbChooseLevel">¿Cuál es tu nivel?</h2>
-                <p class="muted" data-i18n="onbLevelHint">Puedes cambiarlo cuando quieras desde Inicio.</p>
-                <div class="level-picker" id="onb-level-picker"></div>
+                <p class="muted" data-i18n="onbExamHint">Haz un examen corto para descubrirlo. Puedes repetirlo cuando quieras desde Inicio.</p>
+                <div class="onb-choices">
+                    <button class="onb-choice onb-choice-main" id="onb-exam-btn">
+                        <span class="onb-choice-icon">📝</span>
+                        <span><strong data-i18n="onbExamTitle">Hacer el examen de nivel</strong><br><small data-i18n="onbExamDesc">60 preguntas, 3 vidas · recomendado si ya sabes algo</small></span>
+                    </button>
+                    <button class="onb-choice" id="onb-a1-btn">
+                        <span class="onb-choice-icon">🌱</span>
+                        <span><strong data-i18n="onbA1Title">Empezar desde cero</strong><br><small data-i18n="onbA1Desc">Comienza en el nivel A1</small></span>
+                    </button>
+                </div>
                 <button class="link-btn" id="onb-back-btn" data-i18n="onbBack">← Atrás</button>
             </div>
         </div>
@@ -39,18 +49,17 @@
 
     <!-- Top Bar: navigation (inline on desktop, dropdown on mobile) + language + theme -->
     <div class="top-bar">
-        <div class="nav-links-container" id="nav-links-container">
-            <button class="nav-btn active" id="btn-mode-home" data-i18n="home" onclick="switchView('home')">🏠 Inicio</button>
-            <button class="nav-btn" id="btn-mode-practice" data-i18n="practice" onclick="switchView('practice')">🎮 Práctica</button>
-            <button class="nav-btn" id="btn-mode-creator" data-i18n="creator" onclick="switchView('creator')">➕ Contenido</button>
-        </div>
+        <nav class="nav-links-container" id="nav-links-container">
+            <button class="owl-home-btn active" id="btn-mode-home" data-i18n-title="homeTitle" title="Inicio" aria-label="Inicio" onclick="switchView('home')">🦉</button>
+            <button class="nav-btn" id="btn-mode-practice" data-i18n="practice" onclick="switchView('practice')" hidden>🎮 Práctica</button>
+            <button class="nav-btn" id="btn-mode-creator" data-i18n="creator" onclick="switchView('creator')" hidden>➕ Contenido</button>
+        </nav>
         <div class="top-bar-right">
             <button class="top-bar-btn" id="lang-toggle-btn" onclick="cycleUiLanguage()" title="Idioma de la interfaz" aria-label="Idioma de la interfaz">🌐</button>
             <div class="toggle-theme-wrapper">
                 <input type="checkbox" id="theme-toggle-checkbox" onchange="toggleThemeSwitch()" aria-label="Modo oscuro">
                 <label for="theme-toggle-checkbox"></label>
             </div>
-            <button class="hamburger-btn" onclick="toggleMobileNav()" aria-label="Menú">☰</button>
         </div>
     </div>
 
@@ -93,13 +102,36 @@
         <!-- HOME / DASHBOARD VIEW -->
         <section id="view-home" class="view-section active">
             <div class="home-hero">
-                <div class="hero-owl">🦉</div>
                 <div class="hero-text">
-                    <p class="hero-hello" data-i18n="dashboardTitle">¡Hola! 🦉</p>
-                    <h1 id="home-greeting">Estás aprendiendo</h1>
+                    <p class="hero-hello" data-i18n="dashboardTitle">¡Hola!</p>
+                    <h1 class="hero-learning"><span data-i18n="homeLearning">Estás aprendiendo</span> <span id="hero-lang-dropdown"></span></h1>
                     <p class="muted" id="home-subgreeting"></p>
                 </div>
                 <button class="action-btn hero-cta" data-i18n="btnStartPractice" onclick="switchView('practice')">🎮 Iniciar Sesión de Práctica</button>
+            </div>
+
+            <!-- Diccionario / traductor -->
+            <div class="creator-card dict-card">
+                <h2 data-i18n="dictTitle">🔎 Diccionario</h2>
+                <div class="dict-direction">
+                    <div class="dict-dir-side">
+                        <span class="dict-dir-caption" id="dict-from-caption"></span>
+                        <div id="dict-from"></div>
+                    </div>
+                    <button type="button" class="dict-swap" id="dict-swap" data-i18n-title="dictSwap" title="Invertir" aria-label="Invertir">⇄</button>
+                    <div class="dict-dir-side">
+                        <span class="dict-dir-caption" id="dict-to-caption"></span>
+                        <div id="dict-to"></div>
+                    </div>
+                </div>
+                <form class="dict-form" id="dict-form">
+                    <input type="text" id="dict-input" class="duo-input" maxlength="400" autocomplete="off" data-i18n-placeholder="dictPlaceholder" placeholder="Escribe una palabra o una frase…">
+                    <button type="submit" class="action-btn dict-btn" data-i18n="dictTranslate">Traducir</button>
+                </form>
+                <label class="dict-auto"><input type="checkbox" id="dict-auto" checked> <span data-i18n="dictAutoAdd">Añadir automáticamente a mis ejercicios</span></label>
+                <div id="dict-result" aria-live="polite"></div>
+                <div id="dict-recent"></div>
+                <p class="dict-privacy" data-i18n="dictPrivacy">Las búsquedas que no están en tu contenido se envían a MyMemory y Wiktionary.</p>
             </div>
 
             <div class="stats-grid">
@@ -110,13 +142,11 @@
             </div>
 
             <div class="creator-card">
-                <h2 data-i18n="studyLanguage">Idioma que deseas Aprender</h2>
-                <div class="lang-picker" id="study-lang-picker"></div>
-            </div>
-
-            <div class="creator-card">
                 <h2 data-i18n="yourLevel">🎯 Tu nivel</h2>
-                <p class="muted card-hint" data-i18n="levelHint">El vocabulario y las conversaciones se adaptan al nivel que elijas.</p>
+                <div class="level-card-header">
+                    <p class="muted card-hint" data-i18n="levelHintExam">Supera el examen para desbloquear niveles superiores. Puedes practicar cualquier nivel desbloqueado.</p>
+                    <button class="action-btn btn-secondary exam-open-btn" onclick="switchView('exam')" data-i18n="examOpenBtn">📝 Examen de nivel</button>
+                </div>
                 <div class="level-picker" id="home-level-picker"></div>
             </div>
 
@@ -139,6 +169,11 @@
             <div id="exercise-container">
                 <!-- Exercises loaded dynamically -->
             </div>
+        </section>
+
+        <!-- EXAMEN DE NIVEL -->
+        <section id="view-exam" class="view-section">
+            <div id="exam-container"></div>
         </section>
 
         <!-- CREATOR MODE VIEW -->

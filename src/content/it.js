@@ -15,12 +15,24 @@ export default {
         { id: "it_g2", verb: "Essere", tense: "Presente indicativo", topic: "verbs", level: "A1",
           conjugations: { je: "sono", tu: "sei", il: "è", nous: "siamo", vous: "siete", ils: "sono" } },
         { id: "it_g3", verb: "Andare", tense: "Passato prossimo", topic: "verbs", level: "A2",
-          conjugations: { je: "sono andato", tu: "sei andato", il: "è andato", nous: "siamo andati", vous: "siete andati", ils: "sono andati" } }
+          conjugations: { je: "sono andato", tu: "sei andato", il: "è andato", nous: "siamo andati", vous: "siete andati", ils: "sono andati" } },
+        { id: "it_g4", verb: "Fare", tense: "Futuro semplice", topic: "verbs", level: "B1",
+          conjugations: { je: "farò", tu: "farai", il: "farà", nous: "faremo", vous: "farete", ils: "faranno" } },
+        { id: "it_g5", verb: "Potere", tense: "Congiuntivo presente", topic: "verbs", level: "B2",
+          conjugations: { je: "possa", tu: "possa", il: "possa", nous: "possiamo", vous: "possiate", ils: "possano" } },
+        { id: "it_g6", verb: "Essere", tense: "Congiuntivo imperfetto", topic: "verbs", level: "C1",
+          conjugations: { je: "fossi", tu: "fossi", il: "fosse", nous: "fossimo", vous: "foste", ils: "fossero" } },
+        { id: "it_g7", verb: "Venire", tense: "Passato remoto", topic: "verbs", level: "C2",
+          conjugations: { je: "venni", tu: "venisti", il: "venne", nous: "venimmo", vous: "veniste", ils: "vennero" } }
     ],
     fill: [
         { id: "it_f1", title: { es: "Completa la frase", en: "Complete the sentence", fr: "Complète la phrase" }, sentence: "Io ___ una deliziosa mela rossa.", answer: "mangio", img: "🍎", topic: "phrases", level: "A1" },
         { id: "it_f2", title: { es: "Completa con el artículo", en: "Complete with the article", fr: "Complète avec l'article" }, sentence: "___ gatto dorme sulla sedia.", answer: "Il", img: "🐱", topic: "phrases", level: "A1" },
-        { id: "it_f3", title: { es: "Completa con el verbo en futuro", en: "Complete with the verb in the future", fr: "Complète avec le verbe au futur" }, sentence: "Domani ___ al mercato.", answer: "andremo", img: "🛒", topic: "phrases", level: "B1" }
+        { id: "it_f3", title: { es: "Completa con el verbo en futuro", en: "Complete with the verb in the future", fr: "Complète avec le verbe au futur" }, sentence: "Domani ___ al mercato.", answer: "andremo", img: "🛒", topic: "phrases", level: "B1" },
+        { id: "it_f4", title: { es: "Completa con la forma verbal correcta", en: "Complete with the correct verb form", fr: "Complète avec la bonne forme verbale" }, sentence: "Ieri ___ andato al cinema.", answer: "sono", img: "🎬", topic: "phrases", level: "A2" },
+        { id: "it_f5", title: { es: "Completa con la forma verbal correcta", en: "Complete with the correct verb form", fr: "Complète avec la bonne forme verbale" }, sentence: "Penso che lui ___ ragione.", answer: "abbia", img: "🤔", topic: "phrases", level: "B2" },
+        { id: "it_f6", title: { es: "Completa con la forma verbal correcta", en: "Complete with the correct verb form", fr: "Complète avec la bonne forme verbale" }, sentence: "Se ___ più tempo, viaggerei di più.", answer: "avessi", img: "✈️", topic: "phrases", level: "C1" },
+        { id: "it_f7", title: { es: "Completa con la forma verbal correcta", en: "Complete with the correct verb form", fr: "Complète avec la bonne forme verbale" }, sentence: "Dante ___ la Divina Commedia nel Trecento.", answer: "scrisse", img: "📜", topic: "phrases", level: "C2" }
     ],
     order: [
         { id: "it_o1", title: { es: "Traduce: «El gato come una manzana»", en: "Translate: \"The cat eats an apple\"", fr: "Traduis : « Le chat mange une pomme »" }, sentence: "Il gatto mangia una mela", extras: ["cane", "rossa", "nella"], topic: "syntax", level: "A1" },

@@ -6,9 +6,12 @@ const hadStoredData = !!localStorage.getItem('duo_french_db_v5');
 import { startNewSession, handleDrawerAction } from './exercises.js';
 import { renderCreatorLists, populateTopicDropdown, updateCreatorExamples, initCreatorView } from './creator.js';
 import { updateHeaderStats, initLocalFileHandle, connectLocalFile, reconnectLocalFile, openAndConnectLocalFile, setTopicFilter, ensureLangContent, saveDB } from './state.js';
-import { getLevelFilter, setLevelFilter } from './levels.js';
+import { getLevelFilter, setLevelFilter, getUnlockedLevel, setUnlockedLevel, isLevelUnlocked, migrateUnlockedLevels } from './levels.js';
+import { initExam, showExamIntro } from './exam.js';
 import { setUiLang, getUiLang, setStudyLang, getStudyLang, getTheme, setTheme, applyTheme, applyTranslationsToDOM } from './i18n.js';
 import { populateBrowserVoices } from './audio.js';
+import { flagSVG } from './flags.js';
+import { initDictionary, renderDictionaryChrome } from './dictionary.js';
 import { renderHome, shouldShowOnboarding, markOnboarded, renderOnboarding, closeOnboarding } from './home.js';
 
 let currentView = 'home';
@@ -20,10 +23,11 @@ function isPracticeActive() {
 window.switchView = function(view) {
     currentView = view;
     document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
 
-    const navContainer = document.getElementById('nav-links-container');
-    if (navContainer) navContainer.classList.remove('mobile-open');
+    // Barra superior: el búho lleva a Inicio; solo se muestra el botón de la otra sección
+    document.getElementById('btn-mode-home').classList.toggle('active', view === 'home');
+    document.getElementById('btn-mode-practice').hidden = view !== 'creator';
+    document.getElementById('btn-mode-creator').hidden = view !== 'practice';
 
     // En Home ocultamos la barra de filtros (Home ya tiene sus propios selectores)
     document.body.classList.toggle('hide-header', view !== 'practice');
@@ -31,17 +35,18 @@ window.switchView = function(view) {
     const drawer = document.getElementById('bottom-drawer');
     if (view === 'home') {
         document.getElementById('view-home').classList.add('active');
-        document.getElementById('btn-mode-home').classList.add('active');
         drawer.style.display = 'none';
         refreshHome();
+    } else if (view === 'exam') {
+        document.getElementById('view-exam').classList.add('active');
+        drawer.style.display = 'none';
+        showExamIntro();
     } else if (view === 'practice') {
         document.getElementById('view-practice').classList.add('active');
-        document.getElementById('btn-mode-practice').classList.add('active');
         drawer.style.display = 'flex';
         startNewSession();
     } else {
         document.getElementById('view-creator').classList.add('active');
-        document.getElementById('btn-mode-creator').classList.add('active');
         drawer.style.display = 'none';
         initCreatorView();
         renderCreatorLists();
@@ -49,19 +54,6 @@ window.switchView = function(view) {
     }
     window.scrollTo({ top: 0 });
 };
-
-window.toggleMobileNav = function() {
-    const navContainer = document.getElementById('nav-links-container');
-    if (navContainer) navContainer.classList.toggle('mobile-open');
-};
-
-document.addEventListener('click', function(e) {
-    const navContainer = document.getElementById('nav-links-container');
-    if (!navContainer) return;
-    if (navContainer.contains(e.target)) return;
-    if (e.target.closest('.hamburger-btn')) return;
-    navContainer.classList.remove('mobile-open');
-});
 
 // --- Tema ---
 function applyTopic(val) {
@@ -85,8 +77,20 @@ window.changeHomeTopicFilter = function() {
 // --- Nivel ---
 function applyLevel(level) {
     setLevelFilter(level);
+    syncLevelSelect();
+}
+
+// Selector de nivel de Práctica: los niveles bloqueados no se pueden elegir
+function syncLevelSelect() {
+    const lang = getStudyLang();
+    // Si el nivel elegido está bloqueado en este idioma, se usa el máximo desbloqueado
+    if (!isLevelUnlocked(getLevelFilter(), lang)) setLevelFilter(getUnlockedLevel(lang));
     const headerLvl = document.getElementById('level-filter-select');
-    if (headerLvl) headerLvl.value = level;
+    if (!headerLvl) return;
+    headerLvl.querySelectorAll('option').forEach(opt => {
+        opt.disabled = !isLevelUnlocked(opt.value, lang);
+    });
+    headerLvl.value = getLevelFilter();
 }
 
 window.changeLevelFilter = function() {
@@ -96,11 +100,10 @@ window.changeLevelFilter = function() {
 
 // --- Idioma de interfaz ---
 const UI_LANG_CYCLE = ['es', 'en', 'fr'];
-const UI_LANG_FLAGS = { es: '🇪🇸', en: '🇬🇧', fr: '🇫🇷' };
 
 function updateLangButton() {
     const btn = document.getElementById('lang-toggle-btn');
-    if (btn) btn.textContent = UI_LANG_FLAGS[getUiLang()] || '🌐';
+    if (btn) btn.innerHTML = flagSVG(getUiLang(), 'flag-lg');
 }
 
 function applyUiLang(lang) {
@@ -140,6 +143,8 @@ function applyStudyLang(lang) {
 }
 
 function refreshHome() {
+    syncLevelSelect();
+    renderDictionaryChrome();
     renderHome({
         onPickLang: applyStudyLang,
         onPickLevel: (level) => { applyLevel(level); refreshHome(); }
@@ -157,8 +162,14 @@ function showOnboarding(step) {
     renderOnboarding(step, {
         onPickUiLang: (lang) => { applyUiLang(lang); showOnboarding(step); },
         onPickLang: (lang) => { applyStudyLang(lang); showOnboarding(2); },
-        onPickLevel: (level) => {
-            applyLevel(level);
+        onTakeExam: () => {
+            markOnboarded();
+            closeOnboarding();
+            window.switchView('exam');
+        },
+        onStartA1: () => {
+            setUnlockedLevel(getStudyLang(), 'A1');
+            applyLevel('A1');
             markOnboarded();
             closeOnboarding();
             window.switchView('home');
@@ -186,15 +197,16 @@ function initApp() {
     applyTranslationsToDOM();
     updateHeaderStats();
     applyStudyLangContent();
-
-    const levelSelect = document.getElementById('level-filter-select');
-    if (levelSelect) levelSelect.value = getLevelFilter();
+    migrateUnlockedLevels(getStudyLang());
+    syncLevelSelect();
 
     updateLangButton();
 
     const themeCheckbox = document.getElementById('theme-toggle-checkbox');
     if (themeCheckbox) themeCheckbox.checked = (getTheme() === 'dark');
 
+    initDictionary({ onChange: refreshHome, onPickStudyLang: applyStudyLang, onPickNativeLang: applyUiLang });
+    initExam({ onFinish: (view) => window.switchView(view), onExit: () => window.switchView('home') });
     window.switchView('home');
     initLocalFileHandle();
 

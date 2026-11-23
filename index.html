@@ -159,6 +159,14 @@
             <div id="exercise-container">
                 <!-- Exercises loaded dynamically -->
             </div>
+            <!-- Corrección: va debajo del ejercicio, fuera de la cinta del botón -->
+            <div class="feedback-content" id="feedback-content" role="status" aria-live="polite" hidden>
+                <div class="feedback-icon" id="feedback-icon">✓</div>
+                <div class="feedback-text">
+                    <h3 id="feedback-title"></h3>
+                    <p id="feedback-subtext"></p>
+                </div>
+            </div>
         </section>
 
         <!-- EXAMEN DE NIVEL -->
@@ -563,13 +571,6 @@
 
     <!-- Bottom Action Drawer -->
     <div class="bottom-drawer" id="bottom-drawer" style="display: none;">
-        <div class="feedback-content" id="feedback-content">
-            <div class="feedback-icon" id="feedback-icon">✓</div>
-            <div class="feedback-text">
-                <h3 id="feedback-title">¡Excelente!</h3>
-                <p id="feedback-subtext" style="color: var(--duo-text-muted);"></p>
-            </div>
-        </div>
         <button class="check-btn" id="drawer-action-btn" onclick="handleDrawerAction()">COMPROBAR</button>
     </div>
 

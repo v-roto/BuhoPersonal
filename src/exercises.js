@@ -286,6 +286,7 @@ function renderEmptySession() {
     retryQueue = [];
     const drawer = document.getElementById('bottom-drawer');
     if (drawer) drawer.style.display = 'none';
+    hideFeedback();
     const progBar = document.getElementById('progress-bar');
     if (progBar) progBar.style.width = '0%';
     const mobileProg = document.getElementById('progress-bar-mobile');
@@ -332,14 +333,31 @@ export function loadNextQuestion() {
     renderExercise(currentItem);
 }
 
+// --- Corrección (debajo del ejercicio; la cinta inferior solo lleva el botón) ---
+function hideFeedback() {
+    const box = document.getElementById('feedback-content');
+    if (box) box.hidden = true;
+}
+
+function showFeedback(kind, icon, title, subtext) {
+    const box = document.getElementById('feedback-content');
+    if (!box) return;
+    box.className = `feedback-content ${kind}`;
+    document.getElementById('feedback-icon').textContent = icon;
+    document.getElementById('feedback-title').textContent = title;
+    document.getElementById('feedback-subtext').textContent = subtext;
+    box.hidden = false;
+    // Que se vea sin quedar tapada por la cinta inferior (scroll-margin en CSS)
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 export function renderExercise(item) {
     const container = document.getElementById('exercise-container');
     const drawer = document.getElementById('bottom-drawer');
     if (!container || !drawer) return;
     
-    drawer.className = 'bottom-drawer';
     drawer.style.display = 'flex';
-    document.getElementById('feedback-content').style.visibility = 'hidden';
+    hideFeedback();
     const actionBtn = document.getElementById('drawer-action-btn');
     actionBtn.textContent = t('check');
     actionBtn.className = 'check-btn';
@@ -742,12 +760,7 @@ function deferGrammarAfterHelp() {
     queue.splice(Math.min(3, queue.length), 0, currentItem);
 
     const c = currentItem.data.conjugations;
-    const drawer = document.getElementById('bottom-drawer');
-    document.getElementById('feedback-content').style.visibility = 'visible';
-    drawer.className = 'bottom-drawer neutral';
-    document.getElementById('feedback-icon').textContent = '💡';
-    document.getElementById('feedback-title').textContent = t('grammarHelpNotScored');
-    document.getElementById('feedback-subtext').textContent = Object.values(c).join(', ');
+    showFeedback('neutral', '💡', t('grammarHelpNotScored'), Object.values(c).join(', '));
     const actionBtn = document.getElementById('drawer-action-btn');
     actionBtn.textContent = t('continue');
     actionBtn.className = 'check-btn btn-neutral';
@@ -948,28 +961,15 @@ function checkAnswer() {
     }
     playSound(isCorrect ? 'correct' : 'incorrect');
 
-    const drawer = document.getElementById('bottom-drawer');
-    const feedbackContent = document.getElementById('feedback-content');
-    const icon = document.getElementById('feedback-icon');
-    const title = document.getElementById('feedback-title');
-    const subtext = document.getElementById('feedback-subtext');
     const actionBtn = document.getElementById('drawer-action-btn');
 
-    feedbackContent.style.visibility = 'visible';
-
     if (isCorrect) {
-        drawer.className = 'bottom-drawer correct';
-        icon.textContent = '✓';
-        title.textContent = t('excellent');
-        subtext.textContent = t('solutionLabel', { solution: correctSolutionText })
-            + (accentNote ? ` · ⚠️ ${t('accentWarning', { word: accentNote })}` : '');
+        showFeedback('correct', '✓', t('excellent'), t('solutionLabel', { solution: correctSolutionText })
+            + (accentNote ? ` · ⚠️ ${t('accentWarning', { word: accentNote })}` : ''));
         actionBtn.textContent = t('continue');
         actionBtn.className = 'check-btn';
     } else {
-        drawer.className = 'bottom-drawer incorrect';
-        icon.textContent = '✕';
-        title.textContent = t('incorrect');
-        subtext.textContent = correctSolutionText;
+        showFeedback('incorrect', '✕', t('incorrect'), correctSolutionText);
         actionBtn.textContent = t('understood');
         actionBtn.className = 'check-btn btn-incorrect';
     }
@@ -984,6 +984,7 @@ function finishSession() {
     saveDB();
 
     document.getElementById('bottom-drawer').style.display = 'none';
+    hideFeedback();
     const container = document.getElementById('exercise-container');
     const progBar = document.getElementById('progress-bar');
     if (progBar) progBar.style.width = '100%';

@@ -596,28 +596,39 @@ main {
     margin-left: 4px;
 }
 
-/* Bottom Drawer Feedback */
-.bottom-drawer {
+/* Cinta inferior fija: solo lleva el botón (práctica y examen), siempre del mismo alto y en el mismo sitio */
+.bottom-drawer,
+.exam-action-bar {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    background: white;
+    background: var(--duo-surface, white);
     border-top: 2px solid var(--duo-gray-border);
-    padding: 18px 25px;
+    padding: 14px 25px calc(14px + env(safe-area-inset-bottom, 0px));
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
-    max-width: 1280px;
-    margin: 0 auto;
     z-index: 100;
-    transition: background 0.2s;
 }
+.bottom-drawer .check-btn,
+.exam-action-bar .exam-action { width: 100%; max-width: 320px; }
 
-.bottom-drawer.correct { background: var(--duo-green-light); border-color: #a5ed6e; }
-.bottom-drawer.incorrect { background: var(--duo-red-light); border-color: #ffb8b8; }
-
-.feedback-content { display: flex; align-items: center; gap: 15px; }
+/* Corrección: tarjeta debajo del ejercicio */
+.feedback-content {
+    display: flex; align-items: center; gap: 15px;
+    margin: 18px 0 8px; padding: 14px 18px;
+    border-radius: 16px; border: 2px solid var(--duo-gray-border);
+    background: var(--duo-surface-alt);
+    scroll-margin-bottom: 110px;   /* que no quede tapada por la cinta inferior */
+    animation: feedback-in 0.18s ease-out;
+}
+.feedback-content.correct { background: var(--duo-green-light); border-color: #a5ed6e; }
+.feedback-content.incorrect { background: var(--duo-red-light); border-color: #ffb8b8; }
+.feedback-content.neutral { background: var(--duo-blue-light); border-color: var(--duo-blue); }
+.feedback-text { min-width: 0; overflow-wrap: anywhere; }
+.feedback-text p { color: var(--duo-text-muted); }
+@keyframes feedback-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 .feedback-icon {
     width: 42px;
@@ -726,9 +737,12 @@ main {
     main {
         padding: 15px 10px 100px 10px;
     }
-    .bottom-drawer {
-        padding: 10px 15px;
+    .bottom-drawer,
+    .exam-action-bar {
+        padding: 10px 15px calc(10px + env(safe-area-inset-bottom, 0px));
     }
+    .bottom-drawer .check-btn,
+    .exam-action-bar .exam-action { max-width: none; }
     .check-btn {
         padding: 10px 18px;
         font-size: 0.95rem;
@@ -795,6 +809,7 @@ body.dark-mode {
 body.dark-mode header,
 body.dark-mode .mobile-progress-bar-outer,
 body.dark-mode .bottom-drawer,
+body.dark-mode .exam-action-bar,
 body.dark-mode .nav-btn,
 body.dark-mode .creator-card,
 body.dark-mode .vocab-card,
@@ -1446,7 +1461,7 @@ body.dark-mode .lang-dd-option.selected { color: #8fd6ff; }
 }
 .exam-quote-img { font-size: 2.2rem; line-height: 1; }
 .exam-quote-text { font-size: 1.3rem; font-weight: 800; flex: 1; }
-.exam-feedback { margin: 6px 0 12px; padding: 10px 14px; border-radius: 12px; font-weight: 700; }
+.exam-feedback { margin: 6px 0 12px; padding: 10px 14px; border-radius: 12px; font-weight: 700; scroll-margin-bottom: 110px; }
 .exam-feedback.ok { background: var(--duo-green-light); color: var(--duo-green-dark); }
 .exam-feedback.bad { background: var(--duo-red-light); color: var(--duo-red-dark); }
 .exam-action:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -1481,11 +1496,11 @@ body.dark-mode .exam-level-tag { color: #8fd6ff; }
 .grammar-help-pronoun { font-weight: 800; color: var(--duo-text-muted); }
 .grammar-help-form { font-weight: 800; }
 .grammar-help-warning { margin-top: 10px; font-size: 0.85rem; color: var(--duo-yellow-text); font-weight: 700; }
-.bottom-drawer.neutral { background: var(--duo-blue-light); border-color: var(--duo-blue); }
 .neutral .feedback-icon { background: var(--duo-blue); }
 .neutral .feedback-text h3 { color: var(--duo-blue-dark); }
 .check-btn.btn-neutral { background: var(--duo-blue); border-bottom-color: var(--duo-blue-dark); }
-body.dark-mode .bottom-drawer.neutral { background: var(--duo-blue-light) !important; border-color: var(--duo-blue) !important; }
+body.dark-mode .feedback-content.correct { border-color: #3f6d1f; }
+body.dark-mode .feedback-content.incorrect { border-color: #7f2a2d; }
 body.dark-mode .grammar-help-note { color: #a3e635; }
 
 /* --- Examen: escribir y pronunciar --- */
